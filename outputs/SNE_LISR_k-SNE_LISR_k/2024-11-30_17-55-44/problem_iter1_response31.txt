@@ -1,0 +1,7 @@
+```python
+def compute_omega_v2(t: int, n: int, r0: float, rho: float, M: float, L: float) -> float:
+    """Compute the scaling parameter omega with a different decay mechanism."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2 * np.exp(-t / (2 * n))
+    return 1.0
+```

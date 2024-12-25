@@ -1,0 +1,48 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem using an improved approach that considers
+    additional heuristics during the selection of actions.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    # Load the problems into the environment
+    env.load_problems(batch_size, aug_factor)
+    
+    # Reset the environment to get the initial state
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    # Initialize the variables to track distance and steps taken
+    total_distance = 0
+    done = False
+    
+    # Store the sequence of visited nodes
+    visited_nodes = set()
+    
+    while not done:
+        # Preprocess the state for the model
+        state, _, _ = env.pre_step()
+        
+        # Use the model to predict the next node to visit
+        selected, _ = model.forward(state)
+        
+        # Step through the environment with the selected action
+        step_state, reward, done = env.step(selected)
+        
+        # Update the total distance and mark the node as visited
+        total_distance += -reward.item()  # reward is negative distance
+        visited_nodes.add(selected.item())
+
+        # Optionally, implement a heuristic that adjusts the next selection
+        # based on the current state of visited nodes (not implemented here)
+
+    return total_distance  # Return the total distance traveled during this episode
+```

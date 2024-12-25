@@ -1,0 +1,315 @@
+[2024-11-30 17:55:19,348][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\SNE_LISR_k-SNE_LISR_k\2024-11-30_17-55-19
+[2024-11-30 17:55:19,349][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-30 17:55:19,349][root][INFO] - Using LLM: deepseek-coder
+[2024-11-30 17:55:19,350][root][INFO] - Using Algorithm: reevo2d
+[2024-11-30 17:55:21,305][root][INFO] - Problem: SNE_LISR_k
+[2024-11-30 17:55:21,305][root][INFO] - Problem description: Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+[2024-11-30 17:55:21,311][root][INFO] - Functions name: [srk,greedy_matrix,sherman_morrison,compute_omega,search_root]
+[2024-11-30 17:55:21,313][root][INFO] - Evaluating seed function...
+[2024-11-30 17:55:21,314][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+from typing import List
+import numpy as np
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+[2024-11-30 17:55:21,318][root][INFO] - Iteration 0: Running Code 0
+[2024-11-30 17:55:21,649][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-30 17:55:29,189][root][INFO] - Iteration 0, response_id 0: Objective value: 91.35083300977958
+[2024-11-30 17:55:29,190][root][INFO] - Iteration 0: Elitist: 91.35083300977958
+[2024-11-30 17:55:29,190][root][INFO] - Iteration 0 finished...
+[2024-11-30 17:55:29,191][root][INFO] - Best obj: 91.35083300977958,Best obj func index: 4, Best Code Path: problem_iter0_code0.py
+[2024-11-30 17:55:29,191][root][INFO] - Function Evals: 1
+[2024-11-30 17:55:29,192][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `srk` has been selected from this document.
+Write a new `srk` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `srk` function performs a symmetric rank-k update on matrix `G` using inputs `A` and `U`. The inputs consist of three NumPy arrays: `G`, the current estimate of the matrix; `A`, the target matrix to be approximated; and `U`, which represents a selection matrix associated with specific directions in the update process. The function checks if the product of `G` and `U` is close to the product of `A` and `U`, returning `G` unchanged if they are sufficiently similar. If the ranks of the intermediate update are sufficient, the function computes a modified version of `G` that incorporates the difference between `A` and `G` based on the projection defined by `U`, ultimately returning the updated matrix. Thus, the function is intended for iterative optimization algorithms where such updates help in minimizing a certain objective function represented by the matrices.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `srk_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+

@@ -1,0 +1,1458 @@
+[2024-11-30 17:55:44,259][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\SNE_LISR_k-SNE_LISR_k\2024-11-30_17-55-44
+[2024-11-30 17:55:44,259][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-30 17:55:44,259][root][INFO] - Using LLM: deepseek-coder
+[2024-11-30 17:55:44,261][root][INFO] - Using Algorithm: reevo2d
+[2024-11-30 17:55:45,706][root][INFO] - Problem: SNE_LISR_k
+[2024-11-30 17:55:45,706][root][INFO] - Problem description: Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+[2024-11-30 17:55:45,711][root][INFO] - Functions name: [srk,greedy_matrix,sherman_morrison,compute_omega,search_root]
+[2024-11-30 17:55:45,714][root][INFO] - Evaluating seed function...
+[2024-11-30 17:55:45,714][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+from typing import List
+import numpy as np
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+[2024-11-30 17:55:45,720][root][INFO] - Iteration 0: Running Code 0
+[2024-11-30 17:55:46,197][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-30 17:55:49,936][root][INFO] - Iteration 0, response_id 0: Objective value: 91.35083300977958
+[2024-11-30 17:55:49,936][root][INFO] - Iteration 0: Elitist: 91.35083300977958
+[2024-11-30 17:55:49,936][root][INFO] - Iteration 0 finished...
+[2024-11-30 17:55:49,938][root][INFO] - Best obj: 91.35083300977958,Best obj func index: 4, Best Code Path: problem_iter0_code0.py
+[2024-11-30 17:55:49,938][root][INFO] - Function Evals: 1
+[2024-11-30 17:55:49,938][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `srk` has been selected from this document.
+Write a new `srk` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `srk` function performs a symmetric rank-k update on matrix `G` using inputs `A` and `U`. The inputs consist of three NumPy arrays: `G`, the current estimate of the matrix; `A`, the target matrix to be approximated; and `U`, which represents a selection matrix associated with specific directions in the update process. The function checks if the product of `G` and `U` is close to the product of `A` and `U`, returning `G` unchanged if they are sufficiently similar. If the ranks of the intermediate update are sufficient, the function computes a modified version of `G` that incorporates the difference between `A` and `G` based on the projection defined by `U`, ultimately returning the updated matrix. Thus, the function is intended for iterative optimization algorithms where such updates help in minimizing a certain objective function represented by the matrices.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `srk_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-30 17:56:03,246][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:03,686][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:03,730][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,071][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,233][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,479][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,569][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,613][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,804][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:04,974][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,167][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,227][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,421][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,590][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,634][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:05,907][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:18,084][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:18,092][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:18,133][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:18,742][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:18,979][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,034][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,420][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,710][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,764][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,805][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:19,882][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:20,016][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:20,646][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:20,931][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:21,356][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:21,564][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:32,428][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:33,229][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:33,416][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:33,440][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:33,475][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:33,753][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,053][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,098][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,190][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,239][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,429][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:34,545][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:35,579][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:35,858][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:36,968][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:37,132][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:47,437][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:48,719][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:48,764][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `greedy_matrix` has been selected from this document.
+Write a new `greedy_matrix` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `greedy_matrix` function takes three inputs: a square matrix `G`, a square matrix `A`, and an integer `k`. The purpose of this function is to construct a greedy selection matrix `U` that identifies the top `k` indices corresponding to the largest diagonal differences between `G` and `A`. The output is a matrix `U` of size `(number of rows of G, k)`, where the rows corresponding to the selected indices are set to 1 (indicating the selected points) and all other entries are 0. This function is useful in optimization problems where a reduced representation of a matrix is desired, specifically in contexts involving matrix updates or factorization.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `greedy_matrix_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-30 17:56:56,388][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:56,587][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:56,594][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:56,635][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,107][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,130][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,251][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,297][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,555][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,706][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,771][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:56:57,930][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:00,465][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:01,396][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:01,629][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:02,247][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:04,409][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:04,525][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:04,594][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:04,763][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:05,235][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:05,448][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:05,862][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:06,293][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:07,400][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:07,625][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:08,902][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:09,439][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:09,732][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:10,005][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:10,221][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:11,654][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:12,013][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:12,533][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:12,870][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:12,876][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:13,109][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:14,423][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:15,303][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:15,750][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:15,812][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:17,528][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:17,912][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:19,101][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:19,194][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:19,411][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:19,463][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:20,051][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:23,378][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:24,342][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:24,374][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `sherman_morrison` has been selected from this document.
+Write a new `sherman_morrison` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `sherman_morrison` function implements the Sherman-Morrison formula for updating the inverse of a matrix when it is modified by a low-rank update. It takes four inputs: `A_inv`, which is the current inverse of a matrix (as a NumPy array), `U`, `V`, and `W`, which are also NumPy arrays representing matrices involved in the update. The function computes a temporary matrix `temp` to check for singularity before proceeding; if `temp` is singular, it returns the original inverse `A_inv`. If not singular, it applies the Sherman-Morrison formula to provide an updated inverse that reflects the low-rank modification. The output is the updated inverse matrix as a NumPy array.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `sherman_morrison_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-30 17:57:36,017][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:36,173][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:36,412][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:36,872][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:36,876][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:37,282][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:37,993][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:38,119][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:38,131][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:38,209][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:38,427][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:38,617][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:39,021][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:39,253][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:39,608][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:39,800][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:48,518][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:49,631][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:49,665][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:49,958][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:50,550][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:50,857][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:50,873][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:51,780][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:52,086][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:53,391][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:53,444][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:53,619][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:53,809][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:54,321][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:54,565][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:57:54,594][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:02,229][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:02,617][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:02,644][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:03,375][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:04,239][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,138][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,269][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,417][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,633][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,737][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:05,789][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:06,228][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:07,480][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:07,902][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:08,323][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:08,516][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:16,630][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:18,663][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:18,698][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `compute_omega` has been selected from this document.
+Write a new `compute_omega` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `compute_omega` function calculates a scaling parameter, `omega`, which is used within an optimization algorithm. It takes the following inputs: an integer `t`, which represents the current iteration or time step; an integer `n`, indicating a periodic threshold; a float `r0`, representing an initial parameter; a float `rho`, which acts as a decay factor; and two floats `M` and `L`, which are scaling factors. The function outputs a float value for `omega`. If the current iteration `t` is a multiple of `n`, it computes `omega` using the formula that incorporates the initial parameter `r0`, the decay factor `rho`, and the scaling factors `M` and `L`, returning a squared result. If `t` is not a multiple of `n`, it returns a default value of 1.0, indicating no scaling effect outside of the defined periodicity.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `compute_omega_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-30 17:58:25,813][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:26,016][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:26,223][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:26,643][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,125][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,235][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,243][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,322][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,383][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,459][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,592][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,701][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,781][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,821][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:27,873][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:28,122][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:34,093][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:34,257][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:34,403][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:34,701][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:34,987][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,000][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,080][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,619][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,679][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,776][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,907][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,985][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:35,996][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:36,380][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:36,971][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:37,455][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:42,708][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:42,757][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:43,003][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:43,054][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:43,447][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:43,888][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,073][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,288][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,307][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,498][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,661][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,854][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:44,899][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:45,131][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:46,068][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:46,073][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:52,377][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:52,409][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-30 17:58:52,462][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `search_root` has been selected from this document.
+Write a new `search_root` for problem:
+Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.
+
+Function description:
+The `search_root` function implements the LISR-k optimization algorithm, designed to find the optimal solution (root) that minimizes a given objective function. It accepts the following inputs: `objective_function`, which is a callable that evaluates the objective function; `x0`, an initial guess for the solution as a NumPy array; `A_list` and `b_list`, which are lists of matrices and vectors, respectively, defining the quadratic objective function to be minimized; and several optional parameters, such as `tol` (tolerance for convergence), `max_iter` (maximum number of iterations), `k` (rank for the symmetric update), `rho` (scaling parameter), and `M` (an upper bound for the third derivative). The function outputs a NumPy array representing the optimized variable `x`, which satisfies the objective function within the given tolerance. The purpose of the function is to iteratively update the solution by combining Newton-like steps and incorporating greedy updates while maintaining convergence criteria based on the specified parameters.
+
+markdown document:
+```python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+``````python
+from typing import List, Callable
+import numpy as np
+
+def objective_function(x: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray]) -> float:
+    """Compute the value of the objective function f(x)."""
+    n: int = len(A_list)
+    f_x: float = 0.0
+    for i in range(n):
+        f_x += 0.5 * np.dot(x.T, np.dot(A_list[i], x)) + np.dot(b_list[i], x)
+    return f_x / n
+
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    temp = U.T @ (G - A) @ U
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return G  # or implement a robust pseudo-inverse
+    return G - (G - A) @ U @ np.linalg.inv(temp) @ U.T @ (G - A)
+
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U."""
+    diff = np.diag(G - A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U
+
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv # or implement a robust pseudo-inverse
+    return A_inv + A_inv @ U @ np.linalg.inv(temp) @ V.T @ A_inv
+
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L:float) -> float:
+    """Compute the scaling parameter omega."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2
+    return 1.0
+
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+
+if __name__ == "__main__":
+    # Test code here
+    d = 50  # Dimension
+    n = 1000 # Number of samples
+    A_list = [np.random.rand(d, d) for _ in range(n)]
+    for A in A_list:
+        A = np.dot(A, A.T) + np.eye(d) # Ensure A_i are positive definite
+    b_list = [np.random.rand(d) for _ in range(n)]
+    x0 = np.random.rand(d)
+    
+    x_opt = search_root(objective_function, x0, A_list, b_list)
+
+    print(f"Optimal x: {x_opt}")
+    print(f"Objective function value at optimal x: {objective_function(x_opt, A_list, b_list)}")
+```
+
+```python
+def search_root(objective_function: callable, x0: np.ndarray, A_list: List[np.ndarray], b_list: List[np.ndarray],
+                tol: float = 1e-6, max_iter: int = 1000, k: int = 5, rho: float = 0.5, M: float = 1.0) -> np.ndarray:
+    """Implements the LISR-k optimization algorithm."""
+
+    n = len(A_list)
+    d = x0.shape[0]
+    z_list = [x0.copy() for _ in range(n)]
+    B_list = [np.eye(d) for _ in range(n)]  # Initialize B_i^0
+    B_bar = np.sum(B_list, axis=0)
+    B_bar_inv = np.linalg.inv(B_bar)
+    
+    L = np.max(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar L
+    mu = np.min(np.linalg.eigvals(A_list[0])) # Example, assuming all A_i have similar mu
+    if M is None: # Default to this if M is not provided
+        M = (L/mu)**(3/2)/mu # Third derivative upper bound, example using L and mu
+
+    r0 = np.linalg.norm(x0)  # Initialize r0
+
+    x = x0.copy()
+    for t in range(max_iter):
+        i_t = t % n
+        omega = compute_omega(t, n, r0, rho, M, L)
+
+        U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+        B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+        
+        V = (omega * B_list[i_t] - A_list[i_t]) @ U
+        B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+
+        grad_sum = np.sum([np.dot(A_i, z_i) + b_i for A_i, z_i, b_i in zip(A_list, z_list, b_list)], axis=0)
+        x_new = B_bar_inv @ grad_sum  # Update x
+
+        if np.linalg.norm(x_new - x) < tol:
+            break
+
+        x = x_new.copy()
+        z_list[i_t] = x.copy()
+        B_list[i_t] = B_new.copy()
+
+
+    return x
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `search_root_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+

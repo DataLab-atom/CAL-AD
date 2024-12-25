@@ -1,0 +1,13 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on diagonal differences for more precise selection."""
+    # Compute the diagonal differences
+    diff = np.diag(G - A)
+    
+    # Select the top k indices with the largest diagonal differences
+    indices = np.argsort(diff)[::-1][:k]
+    
+    # Construct the greedy selection matrix U
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    
+    return U

@@ -1,0 +1,5 @@
+problem_name: SNE
+problem_type: SNE
+obj_type: min
+problem_size: 8 # problem size for training
+description: Solving the Quadratic Function Minimization Problem via iterative numerical methods. The objective is to find the variable vector \(x\) that minimizes the function value. This function comprises multiple terms, each containing a quadratic term involving matrix multiplication (\(x^\top A_i x\)) and a linear term involving vector multiplication (\(b_i^\top x\)). The matrices \(A_i\) are positive definite, ensuring the function has a unique global minimum. The vectors \(b_i\) affect the characteristics of the linear part.

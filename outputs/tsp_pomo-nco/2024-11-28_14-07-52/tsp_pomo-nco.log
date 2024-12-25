@@ -1,0 +1,327 @@
+[2024-11-28 14:07:52,456][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_pomo-nco\2024-11-28_14-07-52
+[2024-11-28 14:07:52,457][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 14:07:52,457][root][INFO] - Using LLM: deepseek-coder
+[2024-11-28 14:07:52,459][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 14:07:53,975][root][INFO] - Problem: tsp_pomo
+[2024-11-28 14:07:53,976][root][INFO] - Problem description: Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-28 14:07:53,976][root][INFO] - Functions name: [search_routine,_run_episode]
+[2024-11-28 14:07:53,979][root][INFO] - Evaluating seed function...
+[2024-11-28 14:07:53,980][root][INFO] - Seed function code: 
+from numpy.linalg import inv, norm, pinv
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+from dataclasses import dataclass
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+[2024-11-28 14:07:53,983][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 14:07:57,661][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 14:08:14,462][root][INFO] - Iteration 0, response_id 0: Objective value: 12.578914642333984
+[2024-11-28 14:08:14,463][root][INFO] - Iteration 0: Elitist: 12.578914642333984
+[2024-11-28 14:08:14,463][root][INFO] - Iteration 0 finished...
+[2024-11-28 14:08:14,463][root][INFO] - Best obj: 12.578914642333984,Best obj func index: 1, Best Code Path: problem_iter0_code0.py
+[2024-11-28 14:08:14,464][root][INFO] - Function Evals: 1
+[2024-11-28 14:08:14,464][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `search_routine` has been selected from this document.
+Write a new `search_routine` for problem:
+Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `search_routine` function is designed to utilize a pre-trained model to solve the Traveling Salesman Problem (TSP) by finding the minimum total distance of a valid route across several episodes. It takes the following inputs: `env`, which represents the TSP environment; `model`, which is the pre-trained TSP model; `episodes`, which indicates how many runs of the search should be executed; `batch_size`, which determines the number of problems processed at once (defaulting to 10); and `aug_factor`, which specifies the augmentation factor for the input data (defaulting to 8). The function returns a float value that represents the average total distance of the minimum valid solutions computed over the specified episodes, thus providing insight into the model's performance in predicting efficient TSP solutions.
+
+markdown document:
+```python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+``````python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+```
+
+```python
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `search_routine_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 14:08:15,506][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,507][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,594][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,595][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,752][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,753][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,760][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,761][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,812][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,813][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,918][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,919][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:15,971][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:15,973][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,006][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,008][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,012][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,014][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,085][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,090][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,153][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,154][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,194][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,196][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,283][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,284][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,432][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,433][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,469][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,470][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,476][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,478][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,521][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,522][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,725][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,726][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,759][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,760][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,894][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,896][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:16,942][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:16,944][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,233][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,235][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,454][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,455][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,483][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,484][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,485][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,486][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,568][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,570][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,614][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,616][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,697][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,698][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:17,974][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:17,975][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!
+[2024-11-28 14:08:18,073][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:08:18,074][utils.llm_client.base][INFO] - Code terminated due to too many failed attempts!

@@ -1,0 +1,52 @@
+```python
+def search_routine_v2(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, pop_size: int = 100, 
+                      num_iterations: int = 1000, alpha: float = 1.0, beta: float = 1.0) -> np.ndarray:
+    """
+    Search for the optimal routine using a heuristic algorithm with enhanced selection and mutation strategies.
+    
+    Parameters:
+    - cal_total_distance: The function to calculate the total distance.
+    - distance_matrix: The distance matrix for the TSP.
+    - start_node: The starting node of the routine.
+    - pop_size: Size of the population.
+    - num_iterations: Number of iterations to run the algorithm.
+    - alpha: Parameter for controlling the selection pressure.
+    - beta: Parameter for controlling the mutation rate.
+    
+    Returns:
+    - best_ind: The best routine found.
+    """
+    num_points = distance_matrix.shape[0]
+    population = initialize_population(num_points, pop_size, start_node)
+    
+    for _ in range(num_iterations):
+        fitness = evaluate_population(population, distance_matrix, cal_total_distance)
+        
+        # Enhanced selection strategy: Tournament selection
+        selected_indices = []
+        for _ in range(pop_size):
+            tournament_indices = np.random.choice(pop_size, size=int(alpha * pop_size), replace=False)
+            tournament_fitness = fitness[tournament_indices]
+            winner_index = tournament_indices[np.argmin(tournament_fitness)]
+            selected_indices.append(winner_index)
+        
+        selected_population = population[selected_indices]
+        
+        # Crossover and mutation
+        new_population = []
+        for i in range(0, pop_size, 2):
+            parent1 = selected_population[i]
+            parent2 = selected_population[i + 1] if i + 1 < pop_size else selected_population[0]
+            child1 = crossover(parent1, parent2)
+            child2 = crossover(parent2, parent1)
+            child1 = mutate(child1, mutation_rate=beta)
+            child2 = mutate(child2, mutation_rate=beta)
+            new_population.append(child1)
+            new_population.append(child2)
+        
+        population = np.array(new_population)
+    
+    fitness = evaluate_population(population, distance_matrix, cal_total_distance)
+    best_ind = population[np.argmin(fitness)]
+    return best_ind
+```

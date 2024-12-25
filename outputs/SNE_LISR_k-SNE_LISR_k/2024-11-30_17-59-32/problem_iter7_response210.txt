@@ -1,0 +1,8 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on row L2 norms with efficient sorting."""
+    row_norms = np.linalg.norm(G - A, axis=1, ord=2)
+    indices = np.argpartition(row_norms, -k)[-k:]
+    indices = indices[np.argsort(row_norms[indices])[::-1]]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

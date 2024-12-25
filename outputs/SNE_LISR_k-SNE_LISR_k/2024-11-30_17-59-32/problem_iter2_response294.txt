@@ -1,0 +1,16 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U using a more sophisticated approach."""
+    # Compute the difference matrix
+    diff = G - A
+    
+    # Compute the Frobenius norm of the difference matrix for each row
+    row_norms = np.linalg.norm(diff, axis=1)
+    
+    # Select the top k indices with the largest Frobenius norms
+    indices = np.argsort(row_norms)[::-1][:k]
+    
+    # Construct the selection matrix U
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    
+    return U

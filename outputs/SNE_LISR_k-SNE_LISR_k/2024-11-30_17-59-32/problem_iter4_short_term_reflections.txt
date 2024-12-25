@@ -1,0 +1,112 @@
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Subtract current gradient from total gradient for update.
+3. **Line Search**: Ensure step size reduction until objective improves.
+1. **Adaptive Scaling**: Use gradient norm for dynamic step size.
+2. **Greedy Updates**: Prioritize significant components in matrix updates.
+3. **Convergence Check**: Early exit on small change in solution.
+Combine Newton-like steps with adaptive gradient descent for faster convergence.
+1. **Adaptive Scaling**: Use sqrt(grad_norm) for smoother scaling.
+2. **Gradient Clipping**: Prevent gradient explosion with clipping.
+3. **Convergence Check**: Simplify by checking only position change.
+1. **Line Search**: Ensure objective decreases with each step.
+2. **Adaptive Scaling**: Adjust based on gradient norm.
+3. **Greedy Updates**: Prioritize significant changes.
+4. **Matrix Updates**: Efficiently update B_bar_inv.
+1. **Adaptive Scaling**: Adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate `grad_correction` in updates.
+3. **Convergence Check**: Simplify by removing line search.
+Combine Newton-like steps with adaptive gradient descent for faster convergence.
+Combine Newton-like steps with adaptive gradient descent and line search for robust convergence.
+1. **Adaptive Scaling**: Use dynamic scaling factors based on gradient norms.
+2. **Gradient Correction**: Apply corrections to gradients for improved accuracy.
+3. **Avoid Clipping**: Instead of clipping, adjust scaling to prevent gradient explosion.
+1. **Adaptive scaling**: Use sqrt(grad_norm) for smoother scaling.
+2. **Gradient correction**: Add corrected gradient to update step.
+3. **Clipping**: Clip update magnitude, not just gradient.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Combine Newton-like and GD steps adaptively.**
+2. **Adjust step size based on step effectiveness.**
+3. **Avoid excessive backtracking in GD.**
+4. **Balance exploration and exploitation.**
+Combine Newton-like steps with adaptive gradient descent for faster convergence.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Line Search**: Ensure objective decrease.
+3. **Adaptive Scaling**: Adjust step size dynamically.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Line Search**: Ensure objective decreases.
+3. **Adaptive Scaling**: Adjust step size dynamically.
+4. **Greedy Updates**: Focus on most impactful changes.
+5. **Convergence Criteria**: Check norm difference for early stop.
+1. **Gradient Correction**: Use gradient correction to improve convergence.
+2. **Adaptive Scaling**: Adjust scaling based on gradient magnitude.
+3. **Matrix Updates**: Optimize matrix update steps for efficiency.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Subtract `grad_correction` from `grad_sum` before updating `x`.
+3. **Simplify**: Remove unnecessary features like `grad_clip_threshold` and `step_size_decay`.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Adaptive Scaling**: Use gradient magnitude for dynamic scaling.
+2. **Gradient Correction**: Subtract current gradient from total gradient.
+3. **Omega Scaling**: Adjust `omega` based on adaptive scaling.
+Combine Newton-like and gradient descent steps adaptively. Adjust step size dynamically based on performance comparison.
+Combine Newton-like steps with adaptive gradient descent for robust convergence. Adjust step size dynamically based on performance comparison.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Adaptive Scaling**: Use current gradient for dynamic scaling.
+2. **Greedy Updates**: Prioritize significant matrix updates.
+3. **Convergence Check**: Simplify early exit condition.
+4. **Matrix Updates**: Efficiently update inverse matrices.
+Combine Newton-like and gradient descent steps adaptively. Adjust step size dynamically based on performance.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Adaptive Scaling**: Use dynamic scaling factors based on gradient norms and iteration count.
+2. **Gradient Correction**: Apply correction post-update for improved accuracy.
+3. **Matrix Updates**: Efficiently update matrices using Sherman-Morrison formula.
+1. **Adaptive Scaling**: Use `max(1, grad_norm / np.sqrt(d))` for robust scaling.
+2. **Gradient Correction**: Correct with `np.sum([np.dot(A_i, x) + b_i for A_i, b_i in zip(A_list, b_list)], axis=0)`.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Adaptive Scaling**: Dynamically adjust step size.
+3. **Greedy Updates**: Prioritize significant changes.
+4. **Line Search**: Ensure function decrease.
+5. **Gradient Correction**: Fine-tune updates.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term in the update step.
+3. **Convergence Check**: Simplify termination condition using relative change.
+Use adaptive scaling with exponential decay for better convergence.
+1. **Adaptive Step Size**: Dynamically adjust `alpha` based on step effectiveness.
+2. **Hybrid Steps**: Combine Newton-like and gradient descent steps for robustness.
+3. **Early Stopping**: Break early if convergence criteria met.
+1. **Adaptive Scaling**: Adjust `omega` based on gradient norm and iteration count.
+2. **Gradient Correction**: Apply a correction step to refine the gradient update.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Adaptive scaling**: Use `grad_norm / np.sqrt(t + 1)` for smoother convergence.
+2. **Gradient correction**: Apply after `x_new` update for better accuracy.
+3. **Early stopping**: Simplify to `np.linalg.norm(x_new - x) < tol` for efficiency.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Adaptive Scaling**: Dynamically adjust step size.
+3. **Gradient Correction**: Refine updates with past gradients.
+1. **Adaptive Scaling**: Use gradient magnitude for robust scaling.
+2. **Gradient Correction**: Subtract current gradient for better convergence.
+3. **Line Search**: Implement line search for optimal step size.
+1. **Adaptive Scaling**: Use gradient norm relative to Lipschitz constant for robust scaling.
+2. **Greedy Updates**: Prioritize updates based on current gradient magnitude.
+3. **Convergence Check**: Simplify by removing unnecessary gradient correction step.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Adaptive Scaling**: Use `max(1, grad_norm / np.sqrt(d))` for robust scaling.
+2. **Line Search**: Implement line search to ensure step size reduction.
+3. **Gradient Correction**: Simplify gradient correction to `np.sum([np.dot(A_i, x) + b_i for A_i, b_i in zip(A_list, b_list)], axis=0)`.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Efficient Matrix Updates**: Use Sherman-Morrison formula.
+3. **Adaptive Scaling**: Adjust step size dynamically.
+4. **Convergence Check**: Combine position and gradient norms.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Gradient Clipping**: Prevent gradient explosion for stability.
+2. **Line Search**: Ensure objective decreases in each step.
+3. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+1. **Adaptive scaling**: Use gradient norm for dynamic step size.
+2. **Gradient correction**: Subtract current gradient for better convergence.
+3. **Line search**: Ensure objective decreases in each step.

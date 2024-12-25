@@ -1,0 +1,9 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on the largest absolute differences in eigenvalues."""
+    eigenvalues_G, _ = np.linalg.eig(G)
+    eigenvalues_A, _ = np.linalg.eig(A)
+    diff = np.abs(eigenvalues_G - eigenvalues_A)
+    indices = np.argsort(diff)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

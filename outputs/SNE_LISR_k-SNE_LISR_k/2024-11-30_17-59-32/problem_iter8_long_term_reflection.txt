@@ -1,0 +1,5 @@
+1. **Adaptive Step Size**: Use backtracking and dynamic adjustment based on performance.
+2. **Hybrid Methods**: Combine Newton-like and gradient descent steps for robustness.
+3. **Early Convergence**: Simplify checks and remove redundant line searches.
+4. **Momentum Gradual**: Introduce momentum gradually, avoiding it early for simpler convergence.
+5. **Matrix Efficiency**: Optimize matrix updates with block-wise operations.

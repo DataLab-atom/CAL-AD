@@ -1,0 +1,5 @@
+import numpy as np
+
+def initialize_pheromone_matrix(num_points: int, initial_pheromone: float) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)

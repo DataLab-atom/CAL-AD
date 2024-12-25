@@ -1,0 +1,16 @@
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update with additional robustness and efficiency enhancements."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        return A_inv  # Return original inverse if singular
+    
+    # Use Cholesky decomposition for more stable inversion
+    try:
+        L = np.linalg.cholesky(temp)
+        temp_inv = np.linalg.inv(L.T) @ np.linalg.inv(L)
+    except np.linalg.LinAlgError:
+        # Fallback to standard inversion if Cholesky fails
+        temp_inv = np.linalg.inv(temp)
+    
+    # Apply Sherman-Morrison formula with the inverted temp matrix
+    return A_inv + A_inv @ U @ temp_inv @ V.T @ A_inv

@@ -1,0 +1,5 @@
+1. **Adaptive Scaling**: Use `sqrt(grad_norm)` for smoother scaling.
+2. **Gradient Correction**: Subtract current gradient for better convergence.
+3. **Line Search**: Ensure objective decreases with each step.
+4. **Greedy Updates**: Prioritize significant matrix changes.
+5. **Convergence Check**: Simplify with position and gradient norms.

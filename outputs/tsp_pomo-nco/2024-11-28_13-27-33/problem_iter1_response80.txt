@@ -1,0 +1,82 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    min_distance = float('inf')
+    current_path = []
+
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+        # Update the current path
+        current_path.append(selected.item())
+
+        # Calculate the current distance
+        current_distance = -reward.item()
+
+        # Apply a heuristic: If the current distance exceeds the minimum found so far, break early
+        if current_distance > min_distance:
+            break
+
+        # Update the minimum distance
+        if done:
+            min_distance = min(min_distance, current_distance)
+
+    # Apply a post-processing heuristic: 2-opt local search
+    min_distance = two_opt_local_search(env, current_path, min_distance)
+
+    return min_distance
+
+def two_opt_local_search(env: Env, path: list, initial_distance: float) -> float:
+    """
+    Applies a 2-opt local search heuristic to improve the TSP path.
+
+    Args:
+        env: The TSP environment.
+        path: The current path.
+        initial_distance: The initial distance of the path.
+
+    Returns:
+        The improved minimum distance after applying the 2-opt heuristic.
+    """
+    improved = True
+    best_path = path[:]
+    best_distance = initial_distance
+
+    while improved:
+        improved = False
+        for i in range(1, len(best_path) - 2):
+            for j in range(i + 1, len(best_path)):
+                if j - i == 1:
+                    continue
+                new_path = best_path[:]
+                new_path[i:j] = best_path[j - 1:i - 1:-1]
+                new_distance = env.calculate_distance(new_path)
+
+                if new_distance < best_distance:
+                    best_distance = new_distance
+                    best_path = new_path
+                    improved = True
+
+        if not improved:
+            break
+
+    return best_distance
+```

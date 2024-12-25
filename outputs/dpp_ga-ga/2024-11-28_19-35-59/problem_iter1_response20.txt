@@ -1,0 +1,39 @@
+```python
+def mutate_v2(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by introducing more sophisticated changes to its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    mutation_intensity = 0.5
+
+    # Mutate pi array
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            if random.random() < mutation_intensity:
+                # Swap mutation: swap with another element in pi
+                swap_index = random.randint(0, len(pi) - 1)
+                pi[i], pi[swap_index] = pi[swap_index], pi[i]
+            else:
+                # Random mutation: change to a new random value
+                pi[i] = random.randint(0, total_ports - 1)
+
+    # Mutate probe
+    if random.random() < mutation_rate:
+        if random.random() < mutation_intensity:
+            # Probe shift mutation: shift by a random amount within a range
+            shift_amount = random.randint(-5, 5)
+            probe = (probe + shift_amount) % total_ports
+        else:
+            # Random probe mutation: change to a new random value
+            probe = random.randint(0, total_ports - 1)
+
+    return (pi, probe)
+```

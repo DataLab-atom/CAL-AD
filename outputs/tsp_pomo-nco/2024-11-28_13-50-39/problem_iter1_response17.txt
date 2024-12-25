@@ -1,0 +1,45 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with enhanced state tracking.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    # Load a batch of TSP problems into the environment
+    env.load_problems(batch_size, aug_factor)
+    
+    # Reset environment and retrieve initial state
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    total_reward = 0
+    done = False
+    step_count = 0
+
+    # Loop until the episode is done
+    while not done:
+        # Get current state and perform model inference to select an action
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+
+        # Step through the environment with the selected action
+        step_state, reward, done = env.step(selected)
+        
+        # Accumulate the reward (distance) and increment the step count
+        total_reward += reward.item()
+        step_count += 1
+
+        # Optional: Early stopping based on a predefined maximum number of steps
+        if step_count >= 100:
+            break
+
+    # Return the negative of the total reward to represent the minimum distance
+    return -total_reward
+```

@@ -1,0 +1,8 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U using a more sophisticated approach."""
+    diff = np.abs(G - A)
+    row_sums = np.sum(diff, axis=1)
+    indices = np.argsort(row_sums)[::-1][:k]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

@@ -1,0 +1,65 @@
+```python
+def search_routine_v2(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8, heuristic_factor: float = 0.1) -> float:
+    """
+    Executes the POMO algorithm for the TSP with an additional heuristic factor.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: Size of the problem batch.
+        aug_factor: Augmentation factor for data.
+        heuristic_factor: A factor to adjust the heuristic influence on the model's decisions.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+    model.eval()
+    model.to(model.device)  # Ensure model is on the correct device
+
+    env.load_problems(batch_size, aug_factor)
+    total_reward = 0
+
+    for _ in range(int(episodes)):
+        rewards = _run_episode_with_heuristic(env, model, heuristic_factor)
+        total_reward += rewards.mean().item()
+        torch.cuda.empty_cache()  # Clear GPU cache
+
+    total_distance = -total_reward / episodes  # Optimization goal is negative reward
+    return total_distance
+
+def _run_episode_with_heuristic(env: Env, model: Model, heuristic_factor: float) -> torch.Tensor:
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model(state)
+        
+        # Apply heuristic to adjust the selection
+        heuristic_adjustment = heuristic_factor * torch.randn_like(selected)
+        selected = selected + heuristic_adjustment
+        
+        step_state, reward, done = env.step(selected)
+    return reward
+
+if __name__ == "__main__":
+    # Test code here
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5,
+                    'encoder_layer_num': 6, 'qkv_dim': 16, 'head_num': 8,
+                    'logit_clipping': 10, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax', "device": "cuda:0"}
+    env_params = {'problem_size': 50, 'pomo_size': 500, 'test_file_path': None}
+
+    model = Model(**model_params)  # Replace with your actual model loading
+    env = Env(**env_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+    heuristic_factor = 0.1
+
+    total_distance = search_routine_v2(env, model, episodes, batch_size, aug_factor, heuristic_factor)
+    print(f"Total Distance: {total_distance}")
+```

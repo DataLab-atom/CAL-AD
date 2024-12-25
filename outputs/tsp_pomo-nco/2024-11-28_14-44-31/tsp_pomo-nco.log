@@ -1,0 +1,54 @@
+[2024-11-28 14:44:31,868][root][INFO] - Workspace: e:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_pomo-nco\2024-11-28_14-44-31
+[2024-11-28 14:44:31,869][root][INFO] - Project Root: e:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 14:44:31,869][root][INFO] - Using LLM: deepseek-coder
+[2024-11-28 14:44:31,870][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 14:44:33,977][root][INFO] - Problem: tsp_pomo
+[2024-11-28 14:44:33,978][root][INFO] - Problem description: Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-28 14:44:33,979][root][INFO] - Functions name: [_run_episode,search_routine]
+[2024-11-28 14:44:33,985][root][INFO] - Evaluating seed function...
+[2024-11-28 14:44:33,986][root][INFO] - Seed function code: 
+from numpy.linalg import inv, norm, pinv
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+from dataclasses import dataclass
+import torch
+def _run_episode(env: Env, model: Model) -> torch.Tensor:
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model(state)
+        step_state, reward, done = env.step(selected)
+    return reward
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Executes the POMO algorithm for the TSP.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: Size of the problem batch.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+    model.eval()
+    model.to(model.device)  # Ensure model is on the correct device
+
+    env.load_problems(batch_size, aug_factor)
+    total_reward = 0
+
+    for _ in range(int(episodes)):
+        rewards = _run_episode(env, model)
+        total_reward += rewards.mean().item()
+        torch.cuda.empty_cache()  # Clear GPU cache
+
+    total_distance = -total_reward / episodes  # Optimization goal is negative reward
+    return total_distance
+[2024-11-28 14:44:33,988][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 14:44:34,345][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 14:45:03,967][root][INFO] - Iteration 0, response_id 0: Objective value: inf

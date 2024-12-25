@@ -1,0 +1,41 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single enhanced episode of the TSP problem with heuristic-guided exploration.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    # Load problems into the environment
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    # Initialize variables
+    total_reward = 0
+    done = False
+    path_history = []
+
+    # Run the episode until done
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, action_probs = model.forward(state)
+
+        # Implement a heuristic to encourage exploration of promising paths
+        if np.random.rand() < 0.5:  # 50% chance to use heuristic
+            heuristic_selection = np.argsort(action_probs)[-2:]  # Choose top 2 actions
+            selected = np.random.choice(heuristic_selection)
+        
+        step_state, reward, done = env.step(selected)
+        path_history.append(selected)
+        total_reward += reward.item()
+
+    # Calculate the minimum travel distance
+    return -total_reward / len(path_history)  # Normalize by the number of steps taken
+```

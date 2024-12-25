@@ -1,0 +1,25 @@
+algorithm: reevo2d
+reevo_func_index:
+- 3
+max_fe: 1000
+pop_size: 50
+init_pop_size: 200
+mutation_rate: 0.8
+timeout: 60
+diversify_init_pop: true
+model: deepseek-coder
+temperature: 0.5
+problem:
+  problem_name: tsp_pomo
+  problem_type: nco
+  obj_type: min
+  problem_size: 50
+  func_name: heuristics
+  description: Assisting in solving the Traveling Salesman Problem (TSP) with some
+    prior heuristics. TSP requires finding the shortest path that visits all given
+    nodes and returns to the starting node.
+llm_client:
+  _target_: utils.llm_client.openai.OpenAIClient
+  model: gpt-3.5-turbo
+  temperature: 1.0
+  api_key: ${oc.env:OPENAI_API_KEY,null}

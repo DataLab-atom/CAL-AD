@@ -1,0 +1,8 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 29, in <module>
+    module = __import__(f'{outfile_path}'.replace('.py',''), fromlist=['search_root'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_2_func_index_3_response_id_315.py", line 27
+    def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L: float, alpha: float = 0.5) -> float:
+SyntaxError: expected 'except' or 'finally' block

@@ -1,0 +1,27 @@
+```python
+def crossover_v2(parent1: np.ndarray, parent2: np.ndarray) -> np.ndarray:
+    """
+    Perform a modified ordered crossover to create a child route.
+    
+    Parameters:
+    - parent1: np.ndarray, first parent route.
+    - parent2: np.ndarray, second parent route.
+    
+    Returns:
+    - np.ndarray, child route.
+    """
+    size = len(parent1)
+    start, end = sorted(np.random.choice(size, 2, replace=False))
+    child = np.zeros(size, dtype=int)
+    child[start:end] = parent1[start:end]
+    
+    # Create a list of indices to fill from parent2
+    fill_indices = [i for i in range(size) if i < start or i >= end]
+    
+    # Fill the remaining positions in the child route with points from parent2
+    for i in range(size):
+        if parent2[i] not in child:
+            child[fill_indices.pop(0)] = parent2[i]
+    
+    return child
+```

@@ -1,0 +1,1399 @@
+[2024-11-28 23:55:02,854][root][INFO] - Workspace: e:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_constructive-constructive\2024-11-28_23-55-02
+[2024-11-28 23:55:02,854][root][INFO] - Project Root: e:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 23:55:02,855][root][INFO] - Using LLM: deepseek-coder
+[2024-11-28 23:55:02,856][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 23:55:04,838][root][INFO] - Problem: tsp_constructive
+[2024-11-28 23:55:04,838][root][INFO] - Problem description: Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-28 23:55:04,840][root][INFO] - Functions name: [initialize_pheromones,select_next_city,construct_solution,update_pheromones,search_routine]
+[2024-11-28 23:55:04,844][root][INFO] - Evaluating seed function...
+[2024-11-28 23:55:04,845][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+import random
+from typing import Callable
+import numpy as np
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+[2024-11-28 23:55:04,853][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 23:55:05,232][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 23:55:45,880][root][INFO] - Iteration 0, response_id 0: Objective value: 5.92732117551531
+[2024-11-28 23:55:45,881][root][INFO] - Iteration 0: Elitist: 5.92732117551531
+[2024-11-28 23:55:45,881][root][INFO] - Iteration 0 finished...
+[2024-11-28 23:55:45,881][root][INFO] - Best obj: 5.92732117551531,Best obj func index: 4, Best Code Path: problem_iter0_code0.py
+[2024-11-28 23:55:45,883][root][INFO] - Function Evals: 1
+[2024-11-28 23:55:45,883][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `initialize_pheromones` has been selected from this document.
+Write a new `initialize_pheromones` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `initialize_pheromones` function is designed to create and return a pheromone matrix for use in an Ant Colony Optimization (ACO) algorithm aimed at solving the Traveling Salesman Problem (TSP). It takes two inputs: `distance_matrix`, a 2D NumPy array representing the distances between each pair of cities (points), and an optional parameter `initial_pheromone`, which defaults to 1.0 and specifies the initial pheromone level to be uniformly assigned across the matrix. The output is a 2D NumPy array of the same shape as `distance_matrix`, filled with the provided `initial_pheromone` value. The purpose of this function is to set up the pheromone levels, which will be updated throughout the ACO algorithm as ants traverse the cities, reflecting the quality of the paths discovered.
+
+markdown document:
+To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.
+
+```python
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `initialize_pheromones_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 23:55:46,654][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:46,657][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:46,729][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:46,923][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:46,953][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:47,023][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:47,029][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:47,118][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:47,148][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:55:47,172][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:08,840][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `select_next_city` has been selected from this document.
+Write a new `select_next_city` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `select_next_city` function is designed to select the next city for an ant in the context of the Ant Colony Optimization (ACO) algorithm, specifically for solving the Traveling Salesman Problem (TSP). The function takes several inputs: the current city (as an integer), an array of unvisited cities (as a NumPy ndarray), a pheromone matrix (indicating the pheromone levels on city paths), a distance matrix (containing the distances between cities), and two parameters, alpha and beta, which dictate the influence of pheromone and distance, respectively. The function computes a probability distribution based on the attractiveness of unvisited cities, weighted by both pheromone levels and the inverse of the distances to those cities. It then randomly selects the next city according to this probability distribution. The output of the function is the index of the selected next city (an integer), which will guide the ant in its journey through the city network.
+
+markdown document:
+To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.
+
+```python
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `select_next_city_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 23:56:09,083][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,110][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,174][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,270][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,426][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,470][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,563][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,592][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,730][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:09,832][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:27,786][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `construct_solution` has been selected from this document.
+Write a new `construct_solution` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `construct_solution` function is designed to create a tour for a single ant in the context of solving the Traveling Salesman Problem (TSP) using Ant Colony Optimization (ACO). Its inputs include a pheromone matrix (`pheromone_matrix`), a distance matrix (`distance_matrix`), and two parameters, `alpha` and `beta`, which influence the selection of the next city to visit based on pheromone levels and distances. The output is an array representing the sequence of cities visited in the ant's tour. The function starts by randomly selecting a starting city, then iteratively selects the next unvisited city based on a probabilistic choice influenced by the pheromone and distance matrices, ultimately returning the complete tour.
+
+markdown document:
+To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.
+
+```python
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `construct_solution_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 23:56:28,106][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,268][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,486][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,572][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,755][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,860][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,873][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,882][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,898][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:28,954][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,009][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `update_pheromones` has been selected from this document.
+Write a new `update_pheromones` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `update_pheromones` function is designed to modify the pheromone matrix used in the Ant Colony Optimization (ACO) algorithm for solving the Traveling Salesman Problem (TSP). Its inputs include a pheromone matrix (as a NumPy array), an array of tours (where each tour represents the sequence of cities visited), an array of distances corresponding to each tour, an evaporation rate (a float that determines how much pheromone dissipates over time), and a parameter Q (a float that scales the pheromone update based on the quality of the tour). The function outputs an updated pheromone matrix after reducing existing pheromones by the evaporation rate and incrementing the pheromone levels for the edges of the tours based on their lengths¡ªeffectively reinforcing shorter tours. The purpose of this function is to simulate the positive feedback mechanism seen in natural ant foraging behavior, allowing the algorithm to converge towards more optimal tours over successive iterations.
+
+markdown document:
+To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.
+
+```python
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `update_pheromones_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 23:56:50,233][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,526][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,530][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,530][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,567][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,573][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,659][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,670][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,758][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:56:50,979][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,184][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `search_routine` has been selected from this document.
+Write a new `search_routine` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `search_routine` function implements an Ant Colony Optimization (ACO) algorithm to solve the Traveling Salesman Problem (TSP). It takes a callable `cal_total_distance` as an input, which calculates the total distance of a given tour, along with a `distance_matrix` that represents the distances between cities. Additional optional parameters include `pop_size` to define the number of tours (or ants) to create per generation, `num_generations` to specify how many iterations the algorithm should run, and parameters controlling the ACO behavior such as `mutation_rate`, `alpha`, `beta`, `evaporation_rate`, and `Q`. The function returns an array representing the best tour found, aiming to minimize the total distance traveled by simulating the way ants explore paths, update pheromones, and converge towards optimal solutions over a series of generations.
+
+markdown document:
+To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.To solve the Traveling Salesman Problem (TSP) using an Ant Colony Optimization (ACO) algorithm, we can implement the `search_routine` function. The ACO algorithm simulates the behavior of ants searching for the shortest path between their colony and a food source. Here, we'll adapt this behavior to find the shortest path through a set of points.
+
+Below is the implementation of the `search_routine` function along with utility functions to support the ACO algorithm.
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(distance_matrix: np.ndarray, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize the pheromone matrix with a constant value."""
+    return np.full_like(distance_matrix, initial_pheromone, dtype=float)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on the pheromone and distance information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    distance = distance_matrix[current_city, unvisited_cities]
+    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
+    probabilities = attractiveness / np.sum(attractiveness)
+    next_city = np.random.choice(unvisited_cities, p=probabilities)
+    return next_city
+
+def construct_solution(pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, alpha: float, beta: float) -> np.ndarray:
+    """Construct a solution (tour) for a single ant."""
+    num_cities = distance_matrix.shape[0]
+    start_city = np.random.randint(num_cities)
+    tour = [start_city]
+    unvisited_cities = np.delete(np.arange(num_cities), start_city)
+    
+    for _ in range(num_cities - 1):
+        current_city = tour[-1]
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        tour.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+    
+    return np.array(tour)
+
+def update_pheromones(pheromone_matrix: np.ndarray, tours: np.ndarray, distances: np.ndarray, evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update the pheromone matrix based on the tours and their distances."""
+    pheromone_matrix *= (1.0 - evaporation_rate)
+    for tour, distance in zip(tours, distances):
+        for i in range(len(tour) - 1):
+            current_city = tour[i]
+            next_city = tour[i + 1]
+            pheromone_matrix[current_city, next_city] += Q / distance
+            pheromone_matrix[next_city, current_city] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    def cal_total_distance(routine, distance_matrix):
+        '''The objective function. input routine, return total distance.'''
+        expected = np.arange(len(routine))
+        sorted_arr = np.sort(routine)
+        if not np.array_equal(sorted_arr, expected):
+            raise ValueError("Routine does not adhere to TSP constraints")
+        next_points = np.roll(routine, -1)
+        distances = distance_matrix[routine, next_points]
+        return np.sum(distances)
+    
+    best_tour = search_routine(cal_total_distance, distance_matrix)
+    print("Best tour found:", best_tour)
+    print("Total distance of the best tour:", cal_total_distance(best_tour, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**:
+   - `initialize_pheromones`: Initializes the pheromone matrix with a constant value.
+   - `select_next_city`: Selects the next city for an ant based on pheromone and distance information.
+   - `construct_solution`: Constructs a complete tour for a single ant.
+   - `update_pheromones`: Updates the pheromone matrix based on the tours and their distances.
+
+2. **Main Function**:
+   - `search_routine`: Implements the ACO algorithm to find the optimal TSP routine. It iteratively constructs tours for multiple ants, updates the pheromone matrix, and keeps track of the best tour found.
+
+3. **Test Code**:
+   - The test code generates random points, computes the distance matrix, and uses the `search_routine` function to find the best tour. It then prints the best tour and its total distance.
+
+This implementation ensures that the algorithm is modular, with each function performing a specific task, and maintains high precision in numerical computations.
+
+```python
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `search_routine_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 23:57:16,547][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,549][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,612][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,726][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,728][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,823][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,842][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:16,940][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:17,024][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:57:17,379][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 23:58:14,168][root][INFO] - Iteration 1: Running Code 0
+[2024-11-28 23:58:14,622][root][INFO] - Iteration 1: Code Run 0 successful!
+[2024-11-28 23:58:14,623][root][INFO] - Iteration 1: Running Code 1
+[2024-11-28 23:58:15,097][root][INFO] - Iteration 1: Code Run 1 successful!
+[2024-11-28 23:58:15,098][root][INFO] - Iteration 1: Running Code 2
+[2024-11-28 23:58:15,635][root][INFO] - Iteration 1: Code Run 2 successful!
+[2024-11-28 23:58:15,637][root][INFO] - Iteration 1: Running Code 3
+[2024-11-28 23:58:16,129][root][INFO] - Iteration 1: Code Run 3 successful!
+[2024-11-28 23:58:16,129][root][INFO] - Iteration 1: Running Code 4
+[2024-11-28 23:58:16,657][root][INFO] - Iteration 1: Code Run 4 successful!
+[2024-11-28 23:58:16,657][root][INFO] - Iteration 1: Running Code 5
+[2024-11-28 23:58:17,273][root][INFO] - Iteration 1: Code Run 5 successful!
+[2024-11-28 23:58:17,274][root][INFO] - Iteration 1: Running Code 6
+[2024-11-28 23:58:17,990][root][INFO] - Iteration 1: Code Run 6 successful!
+[2024-11-28 23:58:17,991][root][INFO] - Iteration 1: Running Code 7
+[2024-11-28 23:58:18,700][root][INFO] - Iteration 1: Code Run 7 successful!
+[2024-11-28 23:58:18,701][root][INFO] - Iteration 1: Running Code 8
+[2024-11-28 23:58:19,399][root][INFO] - Iteration 1: Code Run 8 successful!
+[2024-11-28 23:58:19,401][root][INFO] - Iteration 1: Running Code 9
+[2024-11-28 23:58:20,480][root][INFO] - Iteration 1: Code Run 9 successful!
+[2024-11-28 23:58:20,482][root][INFO] - Iteration 1: Running Code 10
+[2024-11-28 23:58:21,561][root][INFO] - Iteration 1: Code Run 10 successful!
+[2024-11-28 23:58:21,563][root][INFO] - Iteration 1: Running Code 11
+[2024-11-28 23:58:22,713][root][INFO] - Iteration 1: Code Run 11 successful!
+[2024-11-28 23:58:22,714][root][INFO] - Iteration 1: Running Code 12
+[2024-11-28 23:58:24,066][root][INFO] - Iteration 1: Code Run 12 successful!
+[2024-11-28 23:58:24,076][root][INFO] - Iteration 1: Running Code 13
+[2024-11-28 23:58:26,083][root][INFO] - Iteration 1: Code Run 13 successful!
+[2024-11-28 23:58:26,084][root][INFO] - Iteration 1: Running Code 14
+[2024-11-28 23:58:28,473][root][INFO] - Iteration 1: Code Run 14 successful!
+[2024-11-28 23:58:28,477][root][INFO] - Iteration 1: Running Code 15
+[2024-11-28 23:58:31,517][root][INFO] - Iteration 1: Code Run 15 successful!
+[2024-11-28 23:58:31,555][root][INFO] - Iteration 1: Running Code 16
+[2024-11-28 23:58:35,221][root][INFO] - Iteration 1: Code Run 16 successful!
+[2024-11-28 23:58:35,227][root][INFO] - Iteration 1: Running Code 17
+[2024-11-28 23:58:41,054][root][INFO] - Iteration 1: Code Run 17 successful!
+[2024-11-28 23:58:41,114][root][INFO] - Iteration 1: Running Code 18
+[2024-11-28 23:58:46,408][root][INFO] - Iteration 1: Code Run 18 successful!
+[2024-11-28 23:58:46,410][root][INFO] - Iteration 1: Running Code 19
+[2024-11-28 23:58:51,908][root][INFO] - Iteration 1: Code Run 19 successful!
+[2024-11-28 23:58:51,909][root][INFO] - Iteration 1: Running Code 20
+[2024-11-28 23:58:56,380][root][INFO] - Iteration 1: Code Run 20 successful!
+[2024-11-28 23:58:56,394][root][INFO] - Iteration 1: Running Code 21
+[2024-11-28 23:59:04,392][root][INFO] - Iteration 1: Code Run 21 successful!
+[2024-11-28 23:59:04,394][root][INFO] - Iteration 1: Running Code 22
+[2024-11-28 23:59:09,846][root][INFO] - Iteration 1: Code Run 22 successful!
+[2024-11-28 23:59:09,928][root][INFO] - Iteration 1: Running Code 23
+[2024-11-28 23:59:11,183][root][INFO] - Iteration 1: Code Run 23 successful!
+[2024-11-28 23:59:11,185][root][INFO] - Iteration 1: Running Code 24
+[2024-11-28 23:59:13,037][root][INFO] - Iteration 1: Code Run 24 successful!
+[2024-11-28 23:59:13,038][root][INFO] - Iteration 1: Running Code 25
+[2024-11-28 23:59:17,723][root][INFO] - Iteration 1: Code Run 25 successful!
+[2024-11-28 23:59:17,725][root][INFO] - Iteration 1: Running Code 26
+[2024-11-28 23:59:22,856][root][INFO] - Iteration 1: Code Run 26 successful!
+[2024-11-28 23:59:22,978][root][INFO] - Iteration 1: Running Code 27
+[2024-11-28 23:59:33,350][root][INFO] - Iteration 1: Code Run 27 successful!
+[2024-11-28 23:59:33,352][root][INFO] - Iteration 1: Running Code 28
+[2024-11-28 23:59:38,157][root][INFO] - Iteration 1: Code Run 28 successful!
+[2024-11-28 23:59:38,315][root][INFO] - Iteration 1: Running Code 29
+[2024-11-28 23:59:47,499][root][INFO] - Iteration 1: Code Run 29 successful!
+[2024-11-28 23:59:47,687][root][INFO] - Iteration 1: Running Code 30
+[2024-11-28 23:59:50,616][root][INFO] - Iteration 1: Code Run 30 successful!
+[2024-11-28 23:59:50,627][root][INFO] - Iteration 1: Running Code 31
+[2024-11-28 23:59:51,799][root][INFO] - Iteration 1: Code Run 31 successful!
+[2024-11-28 23:59:51,811][root][INFO] - Iteration 1: Running Code 32
+[2024-11-28 23:59:53,843][root][INFO] - Iteration 1: Code Run 32 successful!
+[2024-11-28 23:59:54,104][root][INFO] - Iteration 1: Running Code 33
+[2024-11-29 00:00:00,779][root][INFO] - Iteration 1: Code Run 33 successful!
+[2024-11-29 00:00:00,981][root][INFO] - Iteration 1: Running Code 34
+[2024-11-29 00:00:11,226][root][INFO] - Iteration 1: Code Run 34 successful!
+[2024-11-29 00:00:11,439][root][INFO] - Iteration 1: Running Code 35
+[2024-11-29 00:00:19,986][root][INFO] - Iteration 1: Code Run 35 successful!
+[2024-11-29 00:00:19,999][root][INFO] - Iteration 1: Running Code 36
+[2024-11-29 00:00:28,312][root][INFO] - Iteration 1: Code Run 36 successful!
+[2024-11-29 00:00:28,315][root][INFO] - Iteration 1: Running Code 37
+[2024-11-29 00:00:38,440][root][INFO] - Iteration 1: Code Run 37 successful!
+[2024-11-29 00:00:38,706][root][INFO] - Iteration 1: Running Code 38
+[2024-11-29 00:00:49,234][root][INFO] - Iteration 1: Code Run 38 successful!
+[2024-11-29 00:00:49,236][root][INFO] - Iteration 1: Running Code 39
+[2024-11-29 00:01:05,895][root][INFO] - Iteration 1: Code Run 39 successful!
+[2024-11-29 00:01:05,897][root][INFO] - Iteration 1: Running Code 40
+[2024-11-29 00:01:23,479][root][INFO] - Iteration 1: Code Run 40 successful!
+[2024-11-29 00:01:23,832][root][INFO] - Iteration 1: Running Code 41
+[2024-11-29 00:01:36,414][root][INFO] - Iteration 1: Code Run 41 successful!
+[2024-11-29 00:01:36,427][root][INFO] - Iteration 1: Running Code 42
+[2024-11-29 00:01:41,012][root][INFO] - Iteration 1: Code Run 42 successful!
+[2024-11-29 00:01:41,015][root][INFO] - Iteration 1: Running Code 43
+[2024-11-29 00:01:47,345][root][INFO] - Iteration 1: Code Run 43 successful!
+[2024-11-29 00:01:47,679][root][INFO] - Iteration 1: Running Code 44
+[2024-11-29 00:01:50,329][root][INFO] - Iteration 1: Code Run 44 successful!
+[2024-11-29 00:01:50,332][root][INFO] - Iteration 1: Running Code 45
+[2024-11-29 00:02:03,506][root][INFO] - Iteration 1: Code Run 45 successful!
+[2024-11-29 00:02:03,520][root][INFO] - Iteration 1: Running Code 46
+[2024-11-29 00:02:13,448][root][INFO] - Iteration 1: Code Run 46 successful!
+[2024-11-29 00:02:13,766][root][INFO] - Iteration 1: Running Code 47
+[2024-11-29 00:02:24,542][root][INFO] - Iteration 1: Code Run 47 successful!
+[2024-11-29 00:02:24,792][root][INFO] - Iteration 1: Running Code 48
+[2024-11-29 00:02:28,163][root][INFO] - Iteration 1: Code Run 48 successful!
+[2024-11-29 00:02:28,178][root][INFO] - Iteration 1: Running Code 49
+[2024-11-29 00:02:30,041][root][INFO] - Iteration 1: Code Run 49 successful!
+[2024-11-29 00:02:30,063][root][INFO] - Iteration 1, response_id 0: Objective value: 5.9120576481481795
+[2024-11-29 00:02:30,081][root][INFO] - Iteration 1, response_id 1: Objective value: 5.963520467876199
+[2024-11-29 00:02:30,099][root][INFO] - Iteration 1, response_id 2: Objective value: 6.00641021187783
+[2024-11-29 00:02:30,148][root][INFO] - Iteration 1, response_id 3: Objective value: 5.926295668877299
+[2024-11-29 00:02:30,168][root][INFO] - Iteration 1, response_id 4: Objective value: 5.923834837060623
+[2024-11-29 00:02:30,188][root][INFO] - Iteration 1, response_id 5: Objective value: 5.930832833751753
+[2024-11-29 00:02:31,239][root][INFO] - Iteration 1, response_id 6: Objective value: 5.938393230515005
+[2024-11-29 00:02:38,159][root][INFO] - Iteration 1, response_id 7: Objective value: 5.951583445707202

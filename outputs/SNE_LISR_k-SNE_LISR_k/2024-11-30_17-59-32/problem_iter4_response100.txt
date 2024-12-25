@@ -1,0 +1,17 @@
+def srk(G: np.ndarray, A: np.ndarray, U: np.ndarray) -> np.ndarray:
+    """Compute the symmetric rank-k update with enhanced stability and efficiency."""
+    if np.allclose(G @ U, A @ U):
+        return G
+    
+    # Compute the difference and project it onto U
+    diff = G - A
+    proj_diff = U.T @ diff @ U
+    
+    # Check for singularity and handle it robustly
+    if np.linalg.matrix_rank(proj_diff) < U.shape[1]:
+        # Use a robust pseudo-inverse to handle singularity
+        proj_diff_pinv = np.linalg.pinv(proj_diff)
+        return G - diff @ U @ proj_diff_pinv @ U.T @ diff
+    
+    # Perform the symmetric rank-k update
+    return G - diff @ U @ np.linalg.inv(proj_diff) @ U.T @ diff

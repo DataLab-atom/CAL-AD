@@ -1,0 +1,9 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 40, in <module>
+    x_new = search_root(objective_function,x0,A_list, b_list,max_iter=100,k=5)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_2_func_index_4_response_id_383.py", line 58, in search_root
+    U = greedy_matrix(omega * B_list[i_t], A_list[i_t], k)
+                      ~~~~~~^~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'

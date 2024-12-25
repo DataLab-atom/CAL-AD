@@ -1,0 +1,24 @@
+```python
+def initialize_pheromones_v2(distance_matrix: np.ndarray, initial_pheromone: float = 1.0, heuristic: str = 'inverse') -> np.ndarray:
+    """Initialize the pheromone matrix with a heuristic-based value."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = np.zeros_like(distance_matrix, dtype=float)
+    
+    if heuristic == 'inverse':
+        # Initialize pheromones inversely proportional to the distance
+        pheromone_matrix = initial_pheromone / (distance_matrix + np.finfo(float).eps)
+    elif heuristic == 'random':
+        # Initialize pheromones with random values
+        pheromone_matrix = np.random.rand(*distance_matrix.shape)
+    elif heuristic == 'constant':
+        # Initialize pheromones with a constant value
+        pheromone_matrix = np.full_like(distance_matrix, initial_pheromone, dtype=float)
+    else:
+        raise ValueError("Unknown heuristic type. Choose from 'inverse', 'random', or 'constant'.")
+    
+    # Ensure pheromones are non-zero to avoid division by zero issues
+    pheromone_matrix[np.isinf(pheromone_matrix)] = initial_pheromone
+    pheromone_matrix[np.isnan(pheromone_matrix)] = initial_pheromone
+    
+    return pheromone_matrix
+```

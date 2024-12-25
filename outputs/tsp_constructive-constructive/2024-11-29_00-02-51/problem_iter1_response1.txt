@@ -1,0 +1,37 @@
+```python
+def search_routine_v2(cal_total_distance: Callable, distance_matrix: np.ndarray, pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """Search for the optimal TSP routine using an enhanced Ant Colony Optimization."""
+    num_cities = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(distance_matrix)
+    best_tour = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        tours = np.array([construct_solution(pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)])
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        # Apply mutation to diversify the population
+        for i in range(len(tours)):
+            if np.random.rand() < mutation_rate:
+                tours[i] = mutate_tour(tours[i])
+        
+        # Update distances after mutation
+        distances = np.array([cal_total_distance(tour, distance_matrix) for tour in tours])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_tour = tours[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, tours, distances, evaporation_rate, Q)
+    
+    return best_tour
+
+def mutate_tour(tour: np.ndarray) -> np.ndarray:
+    """Apply a 2-opt mutation to the tour to diversify the population."""
+    tour = tour.copy()
+    idx1, idx2 = np.random.choice(len(tour), 2, replace=False)
+    if idx1 > idx2:
+        idx1, idx2 = idx2, idx1
+    tour[idx1:idx2] = tour[idx1:idx2][::-1]
+    return tour
+```

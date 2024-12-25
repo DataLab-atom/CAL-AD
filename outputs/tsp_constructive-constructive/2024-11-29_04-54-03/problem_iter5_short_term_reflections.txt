@@ -1,0 +1,50 @@
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Local Search**: Integrate local search for improved solutions.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Local Search**: Integrate local search for refinement.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Fitness Scaling**: Normalize fitness to balance selection pressure.
+5. **Population Diversity**: Maintain a diverse population to avoid local optima.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Local Search**: Integrate local search for improved solutions.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Selection**: Vary selection pressure over iterations.
+5. **Population Diversity**: Maintain diverse population to avoid local optima.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Local Search**: Integrate local search for improved solutions.
+1. **Dynamic Population Size**: Adjust `pop_size` based on fitness improvement.
+2. **Elitism**: Preserve best individuals across iterations.
+3. **Adaptive Mutation**: Vary `beta` based on convergence rate.
+4. **Diverse Crossover**: Use multiple crossover techniques.
+5. **Fitness Sharing**: Encourage diversity in population.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Fitness Sharing**: Encourage diversity in population.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Fitness Sharing**: Encourage diversity in population.
+1. **Elitism**: Preserve best solutions across iterations.
+2. **Adaptive Mutation**: Adjust mutation rate based on fitness.
+3. **Diverse Crossover**: Use multiple crossover techniques.
+4. **Dynamic Population**: Adjust population size dynamically.
+5. **Local Search**: Integrate local search for improved solutions.

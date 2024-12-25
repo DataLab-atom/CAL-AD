@@ -1,0 +1,1601 @@
+[2024-11-29 01:24:12,797][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_constructive-constructive\2024-11-29_01-24-12
+[2024-11-29 01:24:12,798][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-29 01:24:12,798][root][INFO] - Using LLM: deepseek-coder
+[2024-11-29 01:24:12,799][root][INFO] - Using Algorithm: reevo2d
+[2024-11-29 01:24:14,219][root][INFO] - Problem: tsp_constructive
+[2024-11-29 01:24:14,220][root][INFO] - Problem description: Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-29 01:24:14,224][root][INFO] - Functions name: [initialize_pheromones,select_next_city,construct_ant_path,update_pheromones,search_routine]
+[2024-11-29 01:24:14,228][root][INFO] - Evaluating seed function...
+[2024-11-29 01:24:14,229][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+import random
+from typing import Callable
+import numpy as np
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+[2024-11-29 01:24:14,234][root][INFO] - Iteration 0: Running Code 0
+[2024-11-29 01:24:14,799][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-29 01:24:41,578][root][INFO] - Iteration 0, response_id 0: Objective value: 6.175557615803955
+[2024-11-29 01:24:41,579][root][INFO] - Iteration 0: Elitist: 6.175557615803955
+[2024-11-29 01:24:41,579][root][INFO] - Iteration 0 finished...
+[2024-11-29 01:24:41,579][root][INFO] - Best obj: 6.175557615803955,Best obj func index: 4, Best Code Path: problem_iter0_code0.py
+[2024-11-29 01:24:41,579][root][INFO] - Function Evals: 1
+[2024-11-29 01:24:41,580][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `initialize_pheromones` has been selected from this document.
+Write a new `initialize_pheromones` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `initialize_pheromones` function is designed to create a pheromone matrix that serves as the foundation for the Ant Colony Optimization (ACO) algorithm, particularly in solving the Traveling Salesman Problem (TSP). The function takes in two inputs: `num_points`, which specifies the number of points (cities) in the problem, and `initial_pheromone`, a float that sets the initial pheromone value for all paths, defaulting to 1.0 if not provided. The output is a two-dimensional NumPy array (matrix) of shape `(num_points, num_points)`, where each element is filled with the specified `initial_pheromone` value, representing the initial level of pheromone on each edge (path) of the graph connecting the cities. This initialization is crucial for guiding the probabilistic path selection process for the ants in the subsequent iterations of the ACO algorithm.
+
+markdown document:
+To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.
+
+```python
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `initialize_pheromones_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-29 01:24:41,996][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,022][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,103][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,139][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,230][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,317][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,347][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,415][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,431][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,440][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,658][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,673][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,680][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,724][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:42,781][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:43,826][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:53,511][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:53,866][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:55,011][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:24:55,400][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:17,570][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `select_next_city` has been selected from this document.
+Write a new `select_next_city` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `select_next_city` function is designed to probabilistically determine the next city an ant will visit in the context of the Ant Colony Optimization (ACO) algorithm, which is typically applied to solve optimization problems like the Traveling Salesman Problem (TSP). The function takes several inputs: `current_city`, which is an integer representing the current city where the ant is located; `unvisited_cities`, a NumPy array containing indices of cities that remain to be visited; `pheromone_matrix`, a 2D NumPy array representing the pheromone levels on the edges between the cities; `distance_matrix`, another 2D NumPy array that provides the distances between the cities; and two float parameters, `alpha` and `beta`, that control the influence of pheromone levels and distance information, respectively. The output is an integer representing the index of the next city to visit, selected based on a calculated probability that incorporates both pheromone intensity and heuristic distance information, ultimately allowing the ant to explore promising paths while avoiding less favorable options.
+
+markdown document:
+To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.
+
+```python
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `select_next_city_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-29 01:25:17,770][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:17,771][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:17,826][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:17,857][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,111][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,147][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,332][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,339][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,401][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,529][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,568][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,618][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,688][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,749][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,753][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:18,768][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:32,180][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:32,312][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:32,994][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:33,594][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:48,792][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `construct_ant_path` has been selected from this document.
+Write a new `construct_ant_path` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `construct_ant_path` function constructs a path for an ant starting from a specified node in the context of the Ant Colony Optimization (ACO) algorithm, which is typically applied to the Traveling Salesman Problem (TSP). The inputs to this function include the starting node (`start_node`), a pheromone matrix (`pheromone_matrix`) representing the intensity of pheromone trails between nodes, a distance matrix (`distance_matrix`) that contains the distances between all pairs of nodes, and two parameters (`alpha` and `beta`) that control the influence of pheromone levels and distances, respectively, when selecting the next city. The output of the function is an array representing the sequence of nodes (cities) visited by the ant during its path construction. The purpose of this function is to enable the probabilistic selection of the next city based on pheromone levels and heuristic information, ultimately guiding the ant through unvisited cities until all cities are included in the path.
+
+markdown document:
+To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.
+
+```python
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `construct_ant_path_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-29 01:25:48,967][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,001][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,026][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,049][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,119][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,119][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,238][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,437][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,441][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,472][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,596][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,881][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,935][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:49,979][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:50,012][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:25:50,020][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:09,690][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:11,071][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:11,431][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:11,566][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:34,970][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `update_pheromones` has been selected from this document.
+Write a new `update_pheromones` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `update_pheromones` function is designed to update the pheromone levels on the edges of a graph based on the paths constructed by a set of ants during an Ant Colony Optimization (ACO) algorithm. It takes in five parameters: `pheromone_matrix`, which represents the current levels of pheromones on the edges, `paths`, an array of paths that the ants have taken, `distances`, an array of distances corresponding to those paths, an `evaporation_rate` which determines how much pheromone evaporates over time, and `Q`, a constant that influences the intensity of the pheromone deposited. The output is the updated `pheromone_matrix` after applying evaporation and adding pheromone contributions from the successful paths. The purpose of this function is to enhance the pheromone trail for better paths, thereby guiding future ants to find shorter routes through the graph.
+
+markdown document:
+To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.
+
+```python
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `update_pheromones_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-29 01:26:35,166][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,193][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,266][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,300][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,458][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,461][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,528][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,603][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,607][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,792][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,811][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,819][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:35,873][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:36,138][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:36,162][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:36,352][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:50,442][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:50,861][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:57,253][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:26:57,660][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:25,658][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `search_routine` has been selected from this document.
+Write a new `search_routine` for problem:
+Solving Traveling Salesman Problem (TSP) with constructive heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `search_routine` function implements the Ant Colony Optimization (ACO) algorithm to find the optimal path for the Traveling Salesman Problem (TSP) given a distance matrix. Its inputs include a callable `cal_total_distance`, which calculates the total distance of a given path, a `distance_matrix` representing the distances between points, a `start_node` indicating the starting point of the tour, and several optional parameters such as `pop_size`, `num_generations`, `mutation_rate`, `alpha`, `beta`, `evaporation_rate`, and `Q` that control various aspects of the ACO process. The function outputs an array representing the best path discovered during the search process. Its primary purpose is to effectively explore possible routes and continually refine pheromone levels to converge on an optimal solution for routing problems in a simulated manner inspired by ant behavior.
+
+markdown document:
+To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.To implement the `search_routine` function using an Ant Colony Optimization (ACO) algorithm, we'll follow the steps outlined below. ACO is a metaheuristic algorithm inspired by the foraging behavior of ants, which can be effectively used to solve the Traveling Salesman Problem (TSP).
+
+### Steps to Implement ACO for TSP:
+1. **Initialization**: Initialize pheromone trails on the edges of the graph.
+2. **Ants' Path Construction**: Each ant constructs a path by probabilistically choosing the next city based on pheromone levels and heuristic information.
+3. **Pheromone Update**: Update pheromone levels on the edges based on the paths constructed by the ants.
+4. **Termination**: Repeat the process for a specified number of generations and return the best path found.
+
+### Code Implementation:
+
+```python
+import numpy as np
+from scipy import spatial
+from typing import Callable, Tuple
+
+def initialize_pheromones(num_points: int, initial_pheromone: float = 1.0) -> np.ndarray:
+    """Initialize pheromone matrix with a constant value."""
+    return np.full((num_points, num_points), initial_pheromone)
+
+def select_next_city(current_city: int, unvisited_cities: np.ndarray, pheromone_matrix: np.ndarray, 
+                     distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
+    """Select the next city based on pheromone levels and heuristic information."""
+    pheromone = pheromone_matrix[current_city, unvisited_cities]
+    heuristic = 1.0 / (distance_matrix[current_city, unvisited_cities] + 1e-10)
+    probabilities = pheromone ** alpha * heuristic ** beta
+    probabilities /= np.sum(probabilities)
+    return np.random.choice(unvisited_cities, p=probabilities)
+
+def construct_ant_path(start_node: int, pheromone_matrix: np.ndarray, distance_matrix: np.ndarray, 
+                       alpha: float, beta: float) -> np.ndarray:
+    """Construct a path for an ant starting from a given node."""
+    num_points = distance_matrix.shape[0]
+    path = [start_node]
+    unvisited_cities = np.arange(num_points)
+    unvisited_cities = np.delete(unvisited_cities, start_node)
+    
+    current_city = start_node
+    while unvisited_cities.size > 0:
+        next_city = select_next_city(current_city, unvisited_cities, pheromone_matrix, distance_matrix, alpha, beta)
+        path.append(next_city)
+        unvisited_cities = np.delete(unvisited_cities, np.where(unvisited_cities == next_city))
+        current_city = next_city
+    
+    return np.array(path)
+
+def update_pheromones(pheromone_matrix: np.ndarray, paths: np.ndarray, distances: np.ndarray, 
+                      evaporation_rate: float, Q: float) -> np.ndarray:
+    """Update pheromone levels based on the paths constructed by the ants."""
+    pheromone_matrix *= (1 - evaporation_rate)
+    for path, distance in zip(paths, distances):
+        for i in range(len(path) - 1):
+            pheromone_matrix[path[i], path[i + 1]] += Q / distance
+            pheromone_matrix[path[i + 1], path[i]] += Q / distance
+    return pheromone_matrix
+
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+if __name__ == "__main__":
+    num_points = 50
+    points_coordinate = np.random.rand(num_points, 2)  # generate coordinate of points
+    distance_matrix = spatial.distance.cdist(points_coordinate, points_coordinate, metric='euclidean')
+    
+    best_path = search_routine(cal_total_distance, distance_matrix, start_node=0)
+    print("Best path found:", best_path)
+    print("Total distance of the best path:", cal_total_distance(best_path, distance_matrix))
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_pheromones` function initializes the pheromone matrix with a constant value.
+2. **Ants' Path Construction**: The `construct_ant_path` function constructs a path for each ant starting from a given node. The `select_next_city` function is used to probabilistically choose the next city.
+3. **Pheromone Update**: The `update_pheromones` function updates the pheromone levels based on the paths constructed by the ants.
+4. **Main Loop**: The `search_routine` function runs the ACO algorithm for a specified number of generations, updating the pheromone matrix and keeping track of the best path found.
+
+### Test Code:
+The test code generates random points, computes the distance matrix, and runs the `search_routine` function to find the optimal path. The best path and its total distance are then printed.
+
+```python
+def search_routine(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, 
+                   pop_size: int = 100, num_generations: int = 1000, mutation_rate: float = 0.01, 
+                   alpha: float = 1.0, beta: float = 5.0, evaporation_rate: float = 0.5, Q: float = 100.0) -> np.ndarray:
+    """
+    Search for the optimal routine using Ant Colony Optimization (ACO).
+    """
+    num_points = distance_matrix.shape[0]
+    pheromone_matrix = initialize_pheromones(num_points)
+    best_path = None
+    best_distance = np.inf
+    
+    for generation in range(num_generations):
+        paths = [construct_ant_path(start_node, pheromone_matrix, distance_matrix, alpha, beta) for _ in range(pop_size)]
+        distances = np.array([cal_total_distance(path, distance_matrix) for path in paths])
+        
+        if np.min(distances) < best_distance:
+            best_distance = np.min(distances)
+            best_path = paths[np.argmin(distances)]
+        
+        pheromone_matrix = update_pheromones(pheromone_matrix, paths, distances, evaporation_rate, Q)
+    
+    return best_path
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `search_routine_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-29 01:27:25,905][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,086][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,340][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,355][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,400][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,401][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,477][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,622][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,628][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,630][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,753][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,812][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,813][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,825][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,833][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:27:26,861][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:28:20,430][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:28:20,744][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:28:20,757][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:28:20,887][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-29 01:29:14,126][root][INFO] - Iteration 1: Running Code 0
+[2024-11-29 01:29:14,819][root][INFO] - Iteration 1: Code Run 0 successful!
+[2024-11-29 01:29:14,819][root][INFO] - Iteration 1: Running Code 1
+[2024-11-29 01:29:15,539][root][INFO] - Iteration 1: Code Run 1 execution error!
+[2024-11-29 01:29:15,539][root][INFO] - Iteration 1: Running Code 2
+[2024-11-29 01:29:16,181][root][INFO] - Iteration 1: Code Run 2 successful!
+[2024-11-29 01:29:16,182][root][INFO] - Iteration 1: Running Code 3
+[2024-11-29 01:29:16,803][root][INFO] - Iteration 1: Code Run 3 successful!
+[2024-11-29 01:29:16,804][root][INFO] - Iteration 1: Running Code 4
+[2024-11-29 01:29:17,405][root][INFO] - Iteration 1: Code Run 4 successful!
+[2024-11-29 01:29:17,406][root][INFO] - Iteration 1: Running Code 5
+[2024-11-29 01:29:18,042][root][INFO] - Iteration 1: Code Run 5 successful!
+[2024-11-29 01:29:18,042][root][INFO] - Iteration 1: Running Code 6
+[2024-11-29 01:29:18,659][root][INFO] - Iteration 1: Code Run 6 successful!
+[2024-11-29 01:29:18,659][root][INFO] - Iteration 1: Running Code 7
+[2024-11-29 01:29:19,282][root][INFO] - Iteration 1: Code Run 7 successful!
+[2024-11-29 01:29:19,282][root][INFO] - Iteration 1: Running Code 8
+[2024-11-29 01:29:19,924][root][INFO] - Iteration 1: Code Run 8 successful!
+[2024-11-29 01:29:19,925][root][INFO] - Iteration 1: Running Code 9
+[2024-11-29 01:29:20,548][root][INFO] - Iteration 1: Code Run 9 successful!
+[2024-11-29 01:29:20,549][root][INFO] - Iteration 1: Running Code 10
+[2024-11-29 01:29:21,208][root][INFO] - Iteration 1: Code Run 10 successful!
+[2024-11-29 01:29:21,208][root][INFO] - Iteration 1: Running Code 11
+[2024-11-29 01:29:21,927][root][INFO] - Iteration 1: Code Run 11 successful!
+[2024-11-29 01:29:21,928][root][INFO] - Iteration 1: Running Code 12
+[2024-11-29 01:29:22,631][root][INFO] - Iteration 1: Code Run 12 successful!
+[2024-11-29 01:29:22,632][root][INFO] - Iteration 1: Running Code 13
+[2024-11-29 01:29:23,245][root][INFO] - Iteration 1: Code Run 13 successful!
+[2024-11-29 01:29:23,246][root][INFO] - Iteration 1: Running Code 14
+[2024-11-29 01:29:23,877][root][INFO] - Iteration 1: Code Run 14 execution error!
+[2024-11-29 01:29:23,878][root][INFO] - Iteration 1: Running Code 15
+[2024-11-29 01:29:24,514][root][INFO] - Iteration 1: Code Run 15 successful!
+[2024-11-29 01:29:24,515][root][INFO] - Iteration 1: Running Code 16
+[2024-11-29 01:29:25,140][root][INFO] - Iteration 1: Code Run 16 successful!
+[2024-11-29 01:29:25,140][root][INFO] - Iteration 1: Running Code 17
+[2024-11-29 01:29:25,751][root][INFO] - Iteration 1: Code Run 17 successful!
+[2024-11-29 01:29:25,752][root][INFO] - Iteration 1: Running Code 18
+[2024-11-29 01:29:26,369][root][INFO] - Iteration 1: Code Run 18 successful!
+[2024-11-29 01:29:26,369][root][INFO] - Iteration 1: Running Code 19
+[2024-11-29 01:29:26,998][root][INFO] - Iteration 1: Code Run 19 successful!
+[2024-11-29 01:29:26,999][root][INFO] - Iteration 1: Running Code 20
+[2024-11-29 01:29:27,711][root][INFO] - Iteration 1: Code Run 20 successful!
+[2024-11-29 01:29:27,711][root][INFO] - Iteration 1: Running Code 21
+[2024-11-29 01:29:28,406][root][INFO] - Iteration 1: Code Run 21 successful!
+[2024-11-29 01:29:28,406][root][INFO] - Iteration 1: Running Code 22
+[2024-11-29 01:29:29,056][root][INFO] - Iteration 1: Code Run 22 successful!
+[2024-11-29 01:29:29,058][root][INFO] - Iteration 1: Running Code 23
+[2024-11-29 01:29:29,723][root][INFO] - Iteration 1: Code Run 23 successful!
+[2024-11-29 01:29:29,724][root][INFO] - Iteration 1: Running Code 24
+[2024-11-29 01:29:30,424][root][INFO] - Iteration 1: Code Run 24 successful!
+[2024-11-29 01:29:30,424][root][INFO] - Iteration 1: Running Code 25
+[2024-11-29 01:29:31,119][root][INFO] - Iteration 1: Code Run 25 successful!
+[2024-11-29 01:29:31,119][root][INFO] - Iteration 1: Running Code 26
+[2024-11-29 01:29:31,791][root][INFO] - Iteration 1: Code Run 26 successful!
+[2024-11-29 01:29:31,791][root][INFO] - Iteration 1: Running Code 27
+[2024-11-29 01:29:32,444][root][INFO] - Iteration 1: Code Run 27 successful!
+[2024-11-29 01:29:32,445][root][INFO] - Iteration 1: Running Code 28
+[2024-11-29 01:29:33,112][root][INFO] - Iteration 1: Code Run 28 successful!
+[2024-11-29 01:29:33,112][root][INFO] - Iteration 1: Running Code 29
+[2024-11-29 01:29:33,786][root][INFO] - Iteration 1: Code Run 29 successful!
+[2024-11-29 01:29:33,787][root][INFO] - Iteration 1: Running Code 30
+[2024-11-29 01:29:34,506][root][INFO] - Iteration 1: Code Run 30 successful!
+[2024-11-29 01:29:34,506][root][INFO] - Iteration 1: Running Code 31
+[2024-11-29 01:29:35,328][root][INFO] - Iteration 1: Code Run 31 successful!
+[2024-11-29 01:29:35,328][root][INFO] - Iteration 1: Running Code 32
+[2024-11-29 01:29:36,094][root][INFO] - Iteration 1: Code Run 32 successful!
+[2024-11-29 01:29:36,095][root][INFO] - Iteration 1: Running Code 33
+[2024-11-29 01:29:36,880][root][INFO] - Iteration 1: Code Run 33 successful!
+[2024-11-29 01:29:36,880][root][INFO] - Iteration 1: Running Code 34
+[2024-11-29 01:29:37,753][root][INFO] - Iteration 1: Code Run 34 successful!
+[2024-11-29 01:29:37,753][root][INFO] - Iteration 1: Running Code 35
+[2024-11-29 01:29:38,573][root][INFO] - Iteration 1: Code Run 35 successful!
+[2024-11-29 01:29:38,573][root][INFO] - Iteration 1: Running Code 36
+[2024-11-29 01:29:39,471][root][INFO] - Iteration 1: Code Run 36 successful!
+[2024-11-29 01:29:39,471][root][INFO] - Iteration 1: Running Code 37
+[2024-11-29 01:29:40,453][root][INFO] - Iteration 1: Code Run 37 successful!
+[2024-11-29 01:29:40,454][root][INFO] - Iteration 1: Running Code 38
+[2024-11-29 01:29:41,347][root][INFO] - Iteration 1: Code Run 38 successful!
+[2024-11-29 01:29:41,348][root][INFO] - Iteration 1: Running Code 39
+[2024-11-29 01:29:42,457][root][INFO] - Iteration 1: Code Run 39 successful!
+[2024-11-29 01:29:42,458][root][INFO] - Iteration 1: Running Code 40
+[2024-11-29 01:29:45,716][root][INFO] - Iteration 1: Code Run 40 successful!
+[2024-11-29 01:29:45,731][root][INFO] - Iteration 1: Running Code 41
+[2024-11-29 01:29:49,916][root][INFO] - Iteration 1: Code Run 41 successful!
+[2024-11-29 01:29:49,945][root][INFO] - Iteration 1: Running Code 42
+[2024-11-29 01:29:51,538][root][INFO] - Iteration 1: Code Run 42 successful!
+[2024-11-29 01:29:51,545][root][INFO] - Iteration 1: Running Code 43
+[2024-11-29 01:29:58,696][root][INFO] - Iteration 1: Code Run 43 successful!
+[2024-11-29 01:29:58,730][root][INFO] - Iteration 1: Running Code 44
+[2024-11-29 01:30:08,324][root][INFO] - Iteration 1: Code Run 44 successful!
+[2024-11-29 01:30:08,328][root][INFO] - Iteration 1: Running Code 45
+[2024-11-29 01:30:18,636][root][INFO] - Iteration 1: Code Run 45 successful!
+[2024-11-29 01:30:18,649][root][INFO] - Iteration 1: Running Code 46
+[2024-11-29 01:30:28,495][root][INFO] - Iteration 1: Code Run 46 successful!
+[2024-11-29 01:30:28,550][root][INFO] - Iteration 1: Running Code 47
+[2024-11-29 01:30:42,994][root][INFO] - Iteration 1: Code Run 47 successful!
+[2024-11-29 01:30:43,053][root][INFO] - Iteration 1: Running Code 48
+[2024-11-29 01:30:57,359][root][INFO] - Iteration 1: Code Run 48 successful!
+[2024-11-29 01:30:57,405][root][INFO] - Iteration 1: Running Code 49
+[2024-11-29 01:31:05,011][root][INFO] - Iteration 1: Code Run 49 successful!
+[2024-11-29 01:31:05,025][root][INFO] - Iteration 1: Running Code 50
+[2024-11-29 01:31:09,156][root][INFO] - Iteration 1: Code Run 50 successful!
+[2024-11-29 01:31:09,167][root][INFO] - Iteration 1: Running Code 51
+[2024-11-29 01:31:11,876][root][INFO] - Iteration 1: Code Run 51 successful!
+[2024-11-29 01:31:11,878][root][INFO] - Iteration 1: Running Code 52
+[2024-11-29 01:31:13,427][root][INFO] - Iteration 1: Code Run 52 successful!
+[2024-11-29 01:31:13,442][root][INFO] - Iteration 1: Running Code 53
+[2024-11-29 01:31:15,873][root][INFO] - Iteration 1: Code Run 53 successful!
+[2024-11-29 01:31:15,874][root][INFO] - Iteration 1: Running Code 54
+[2024-11-29 01:31:17,208][root][INFO] - Iteration 1: Code Run 54 successful!
+[2024-11-29 01:31:17,210][root][INFO] - Iteration 1: Running Code 55
+[2024-11-29 01:31:20,224][root][INFO] - Iteration 1: Code Run 55 successful!
+[2024-11-29 01:31:20,239][root][INFO] - Iteration 1: Running Code 56
+[2024-11-29 01:31:25,631][root][INFO] - Iteration 1: Code Run 56 successful!
+[2024-11-29 01:31:25,632][root][INFO] - Iteration 1: Running Code 57
+[2024-11-29 01:31:31,627][root][INFO] - Iteration 1: Code Run 57 successful!
+[2024-11-29 01:31:31,629][root][INFO] - Iteration 1: Running Code 58
+[2024-11-29 01:31:39,177][root][INFO] - Iteration 1: Code Run 58 successful!
+[2024-11-29 01:31:39,181][root][INFO] - Iteration 1: Running Code 59
+[2024-11-29 01:31:48,062][root][INFO] - Iteration 1: Code Run 59 successful!
+[2024-11-29 01:31:48,068][root][INFO] - Iteration 1: Running Code 60
+[2024-11-29 01:32:00,789][root][INFO] - Iteration 1: Code Run 60 successful!
+[2024-11-29 01:32:00,829][root][INFO] - Iteration 1: Running Code 61
+[2024-11-29 01:32:15,485][root][INFO] - Iteration 1: Code Run 61 successful!
+[2024-11-29 01:32:15,486][root][INFO] - Iteration 1: Running Code 62
+[2024-11-29 01:32:24,412][root][INFO] - Iteration 1: Code Run 62 successful!
+[2024-11-29 01:32:24,412][root][INFO] - Iteration 1: Running Code 63
+[2024-11-29 01:32:30,386][root][INFO] - Iteration 1: Code Run 63 successful!
+[2024-11-29 01:32:30,387][root][INFO] - Iteration 1: Running Code 64
+[2024-11-29 01:32:31,413][root][INFO] - Iteration 1: Code Run 64 successful!
+[2024-11-29 01:32:31,414][root][INFO] - Iteration 1: Running Code 65
+[2024-11-29 01:32:32,673][root][INFO] - Iteration 1: Code Run 65 successful!
+[2024-11-29 01:32:32,698][root][INFO] - Iteration 1: Running Code 66
+[2024-11-29 01:32:34,143][root][INFO] - Iteration 1: Code Run 66 successful!
+[2024-11-29 01:32:34,165][root][INFO] - Iteration 1: Running Code 67
+[2024-11-29 01:32:37,791][root][INFO] - Iteration 1: Code Run 67 successful!
+[2024-11-29 01:32:37,793][root][INFO] - Iteration 1: Running Code 68
+[2024-11-29 01:32:39,874][root][INFO] - Iteration 1: Code Run 68 successful!
+[2024-11-29 01:32:39,889][root][INFO] - Iteration 1: Running Code 69
+[2024-11-29 01:32:41,092][root][INFO] - Iteration 1: Code Run 69 successful!
+[2024-11-29 01:32:41,094][root][INFO] - Iteration 1: Running Code 70
+[2024-11-29 01:32:44,899][root][INFO] - Iteration 1: Code Run 70 successful!
+[2024-11-29 01:32:44,909][root][INFO] - Iteration 1: Running Code 71
+[2024-11-29 01:32:48,694][root][INFO] - Iteration 1: Code Run 71 successful!
+[2024-11-29 01:32:48,696][root][INFO] - Iteration 1: Running Code 72
+[2024-11-29 01:32:51,242][root][INFO] - Iteration 1: Code Run 72 successful!
+[2024-11-29 01:32:51,244][root][INFO] - Iteration 1: Running Code 73
+[2024-11-29 01:32:54,439][root][INFO] - Iteration 1: Code Run 73 successful!
+[2024-11-29 01:32:54,440][root][INFO] - Iteration 1: Running Code 74
+[2024-11-29 01:32:58,142][root][INFO] - Iteration 1: Code Run 74 successful!
+[2024-11-29 01:32:58,147][root][INFO] - Iteration 1: Running Code 75
+[2024-11-29 01:33:05,195][root][INFO] - Iteration 1: Code Run 75 successful!
+[2024-11-29 01:33:05,199][root][INFO] - Iteration 1: Running Code 76
+[2024-11-29 01:33:09,459][root][INFO] - Iteration 1: Code Run 76 successful!
+[2024-11-29 01:33:09,460][root][INFO] - Iteration 1: Running Code 77
+[2024-11-29 01:33:15,170][root][INFO] - Iteration 1: Code Run 77 successful!
+[2024-11-29 01:33:15,206][root][INFO] - Iteration 1: Running Code 78
+[2024-11-29 01:33:23,185][root][INFO] - Iteration 1: Code Run 78 successful!
+[2024-11-29 01:33:23,190][root][INFO] - Iteration 1: Running Code 79
+[2024-11-29 01:33:26,360][root][INFO] - Iteration 1: Code Run 79 successful!
+[2024-11-29 01:33:26,377][root][INFO] - Iteration 1: Running Code 80
+[2024-11-29 01:33:31,520][root][INFO] - Iteration 1: Code Run 80 successful!
+[2024-11-29 01:33:31,542][root][INFO] - Iteration 1: Running Code 81
+[2024-11-29 01:33:35,850][root][INFO] - Iteration 1: Code Run 81 successful!
+[2024-11-29 01:33:35,886][root][INFO] - Iteration 1: Running Code 82
+[2024-11-29 01:33:37,042][root][INFO] - Iteration 1: Code Run 82 successful!
+[2024-11-29 01:33:37,048][root][INFO] - Iteration 1: Running Code 83
+[2024-11-29 01:33:38,305][root][INFO] - Iteration 1: Code Run 83 successful!
+[2024-11-29 01:33:38,306][root][INFO] - Iteration 1: Running Code 84
+[2024-11-29 01:33:39,160][root][INFO] - Iteration 1: Code Run 84 successful!
+[2024-11-29 01:33:39,162][root][INFO] - Iteration 1: Running Code 85
+[2024-11-29 01:33:39,990][root][INFO] - Iteration 1: Code Run 85 successful!
+[2024-11-29 01:33:39,991][root][INFO] - Iteration 1: Running Code 86
+[2024-11-29 01:33:40,825][root][INFO] - Iteration 1: Code Run 86 successful!
+[2024-11-29 01:33:40,826][root][INFO] - Iteration 1: Running Code 87
+[2024-11-29 01:33:41,754][root][INFO] - Iteration 1: Code Run 87 successful!
+[2024-11-29 01:33:41,755][root][INFO] - Iteration 1: Running Code 88
+[2024-11-29 01:33:42,629][root][INFO] - Iteration 1: Code Run 88 successful!
+[2024-11-29 01:33:42,630][root][INFO] - Iteration 1: Running Code 89
+[2024-11-29 01:33:42,850][root][INFO] - Iteration 1: Code Run 89 successful!
+[2024-11-29 01:33:42,857][root][INFO] - Iteration 1: Running Code 90
+[2024-11-29 01:33:43,758][root][INFO] - Iteration 1: Code Run 90 successful!
+[2024-11-29 01:33:43,760][root][INFO] - Iteration 1: Running Code 91
+[2024-11-29 01:33:44,578][root][INFO] - Iteration 1: Code Run 91 successful!
+[2024-11-29 01:33:44,579][root][INFO] - Iteration 1: Running Code 92
+[2024-11-29 01:33:45,372][root][INFO] - Iteration 1: Code Run 92 successful!
+[2024-11-29 01:33:45,372][root][INFO] - Iteration 1: Running Code 93
+[2024-11-29 01:33:46,210][root][INFO] - Iteration 1: Code Run 93 successful!
+[2024-11-29 01:33:46,211][root][INFO] - Iteration 1: Running Code 94
+[2024-11-29 01:33:47,048][root][INFO] - Iteration 1: Code Run 94 successful!
+[2024-11-29 01:33:47,049][root][INFO] - Iteration 1: Running Code 95
+[2024-11-29 01:33:47,783][root][INFO] - Iteration 1: Code Run 95 successful!
+[2024-11-29 01:33:47,784][root][INFO] - Iteration 1: Running Code 96
+[2024-11-29 01:33:48,229][root][INFO] - Iteration 1: Code Run 96 successful!
+[2024-11-29 01:33:48,229][root][INFO] - Iteration 1: Running Code 97
+[2024-11-29 01:33:48,971][root][INFO] - Iteration 1: Code Run 97 successful!
+[2024-11-29 01:33:48,972][root][INFO] - Iteration 1: Running Code 98
+[2024-11-29 01:33:49,702][root][INFO] - Iteration 1: Code Run 98 successful!
+[2024-11-29 01:33:49,703][root][INFO] - Iteration 1: Running Code 99
+[2024-11-29 01:33:50,200][root][INFO] - Iteration 1: Code Run 99 successful!
+[2024-11-29 01:33:50,203][root][INFO] - Iteration 1, response_id 0: Objective value: inf
+[2024-11-29 01:33:50,205][root][INFO] - Iteration 1, response_id 1: Objective value: inf
+[2024-11-29 01:33:50,207][root][INFO] - Iteration 1, response_id 2: Objective value: inf
+[2024-11-29 01:33:50,208][root][INFO] - Iteration 1, response_id 3: Objective value: inf
+[2024-11-29 01:33:50,221][root][INFO] - Iteration 1, response_id 4: Objective value: inf
+[2024-11-29 01:33:50,223][root][INFO] - Iteration 1, response_id 5: Objective value: inf
+[2024-11-29 01:33:50,235][root][INFO] - Iteration 1, response_id 6: Objective value: inf
+[2024-11-29 01:33:50,250][root][INFO] - Iteration 1, response_id 7: Objective value: inf
+[2024-11-29 01:33:50,252][root][INFO] - Iteration 1, response_id 8: Objective value: inf
+[2024-11-29 01:33:50,254][root][INFO] - Iteration 1, response_id 9: Objective value: inf
+[2024-11-29 01:33:50,270][root][INFO] - Iteration 1, response_id 10: Objective value: inf
+[2024-11-29 01:33:50,282][root][INFO] - Iteration 1, response_id 11: Objective value: inf
+[2024-11-29 01:33:50,294][root][INFO] - Iteration 1, response_id 12: Objective value: inf
+[2024-11-29 01:33:50,308][root][INFO] - Iteration 1, response_id 13: Objective value: inf
+[2024-11-29 01:33:50,323][root][INFO] - Iteration 1, response_id 14: Objective value: inf
+[2024-11-29 01:33:50,326][root][INFO] - Iteration 1, response_id 15: Objective value: inf
+[2024-11-29 01:33:50,338][root][INFO] - Iteration 1, response_id 16: Objective value: inf
+[2024-11-29 01:33:50,352][root][INFO] - Iteration 1, response_id 17: Objective value: inf
+[2024-11-29 01:33:50,365][root][INFO] - Iteration 1, response_id 18: Objective value: inf
+[2024-11-29 01:33:50,378][root][INFO] - Iteration 1, response_id 19: Objective value: inf
+[2024-11-29 01:33:50,379][root][INFO] - Iteration 1, response_id 20: Objective value: inf
+[2024-11-29 01:33:50,379][root][INFO] - Iteration 1, response_id 21: Objective value: inf
+[2024-11-29 01:33:50,380][root][INFO] - Iteration 1, response_id 22: Objective value: inf
+[2024-11-29 01:33:50,381][root][INFO] - Iteration 1, response_id 23: Objective value: inf
+[2024-11-29 01:33:50,381][root][INFO] - Iteration 1, response_id 24: Objective value: inf
+[2024-11-29 01:33:50,382][root][INFO] - Iteration 1, response_id 25: Objective value: inf
+[2024-11-29 01:33:50,383][root][INFO] - Iteration 1, response_id 26: Objective value: inf
+[2024-11-29 01:33:50,383][root][INFO] - Iteration 1, response_id 27: Objective value: inf
+[2024-11-29 01:33:50,384][root][INFO] - Iteration 1, response_id 28: Objective value: inf
+[2024-11-29 01:33:50,385][root][INFO] - Iteration 1, response_id 29: Objective value: inf
+[2024-11-29 01:33:50,385][root][INFO] - Iteration 1, response_id 30: Objective value: inf
+[2024-11-29 01:33:50,386][root][INFO] - Iteration 1, response_id 31: Objective value: inf
+[2024-11-29 01:33:50,386][root][INFO] - Iteration 1, response_id 32: Objective value: inf
+[2024-11-29 01:33:50,387][root][INFO] - Iteration 1, response_id 33: Objective value: inf
+[2024-11-29 01:33:50,387][root][INFO] - Iteration 1, response_id 34: Objective value: inf
+[2024-11-29 01:33:50,388][root][INFO] - Iteration 1, response_id 35: Objective value: inf
+[2024-11-29 01:33:50,388][root][INFO] - Iteration 1, response_id 36: Objective value: inf
+[2024-11-29 01:33:50,389][root][INFO] - Iteration 1, response_id 37: Objective value: inf
+[2024-11-29 01:33:50,389][root][INFO] - Iteration 1, response_id 38: Objective value: inf
+[2024-11-29 01:33:50,390][root][INFO] - Iteration 1, response_id 39: Objective value: inf
+[2024-11-29 01:33:50,391][root][INFO] - Iteration 1, response_id 40: Objective value: inf
+[2024-11-29 01:33:50,391][root][INFO] - Iteration 1, response_id 41: Objective value: inf
+[2024-11-29 01:33:50,392][root][INFO] - Iteration 1, response_id 42: Objective value: inf
+[2024-11-29 01:33:50,392][root][INFO] - Iteration 1, response_id 43: Objective value: inf
+[2024-11-29 01:33:50,392][root][INFO] - Iteration 1, response_id 44: Objective value: inf
+[2024-11-29 01:33:50,393][root][INFO] - Iteration 1, response_id 45: Objective value: inf
+[2024-11-29 01:33:50,393][root][INFO] - Iteration 1, response_id 46: Objective value: inf
+[2024-11-29 01:33:50,394][root][INFO] - Iteration 1, response_id 47: Objective value: inf
+[2024-11-29 01:33:50,395][root][INFO] - Iteration 1, response_id 48: Objective value: inf
+[2024-11-29 01:33:50,396][root][INFO] - Iteration 1, response_id 49: Objective value: inf
+[2024-11-29 01:33:50,397][root][INFO] - Iteration 1, response_id 50: Objective value: inf
+[2024-11-29 01:33:50,397][root][INFO] - Iteration 1, response_id 51: Objective value: inf
+[2024-11-29 01:33:50,399][root][INFO] - Iteration 1, response_id 52: Objective value: inf
+[2024-11-29 01:33:50,400][root][INFO] - Iteration 1, response_id 53: Objective value: inf
+[2024-11-29 01:33:50,401][root][INFO] - Iteration 1, response_id 54: Objective value: inf
+[2024-11-29 01:33:50,402][root][INFO] - Iteration 1, response_id 55: Objective value: inf
+[2024-11-29 01:33:50,403][root][INFO] - Iteration 1, response_id 56: Objective value: inf
+[2024-11-29 01:33:50,403][root][INFO] - Iteration 1, response_id 57: Objective value: inf
+[2024-11-29 01:33:50,404][root][INFO] - Iteration 1, response_id 58: Objective value: inf
+[2024-11-29 01:33:50,404][root][INFO] - Iteration 1, response_id 59: Objective value: inf
+[2024-11-29 01:33:50,405][root][INFO] - Iteration 1, response_id 60: Objective value: inf
+[2024-11-29 01:33:50,405][root][INFO] - Iteration 1, response_id 61: Objective value: inf
+[2024-11-29 01:33:50,406][root][INFO] - Iteration 1, response_id 62: Objective value: inf
+[2024-11-29 01:33:50,407][root][INFO] - Iteration 1, response_id 63: Objective value: inf
+[2024-11-29 01:33:50,408][root][INFO] - Iteration 1, response_id 64: Objective value: inf
+[2024-11-29 01:33:50,409][root][INFO] - Iteration 1, response_id 65: Objective value: inf
+[2024-11-29 01:33:50,409][root][INFO] - Iteration 1, response_id 66: Objective value: inf
+[2024-11-29 01:33:50,410][root][INFO] - Iteration 1, response_id 67: Objective value: inf
+[2024-11-29 01:33:50,410][root][INFO] - Iteration 1, response_id 68: Objective value: inf
+[2024-11-29 01:33:50,412][root][INFO] - Iteration 1, response_id 69: Objective value: inf
+[2024-11-29 01:33:50,413][root][INFO] - Iteration 1, response_id 70: Objective value: inf
+[2024-11-29 01:33:50,414][root][INFO] - Iteration 1, response_id 71: Objective value: inf
+[2024-11-29 01:33:54,746][root][INFO] - Iteration 1, response_id 72: Objective value: inf
+[2024-11-29 01:33:55,210][root][INFO] - Iteration 1, response_id 73: Objective value: inf
+[2024-11-29 01:34:00,068][root][INFO] - Iteration 1, response_id 74: Objective value: inf
+[2024-11-29 01:34:00,069][root][INFO] - Iteration 1, response_id 75: Objective value: inf
+[2024-11-29 01:34:09,165][root][INFO] - Iteration 1, response_id 76: Objective value: inf
+[2024-11-29 01:34:12,471][root][INFO] - Iteration 1, response_id 77: Objective value: inf
+[2024-11-29 01:34:12,472][root][INFO] - Iteration 1, response_id 78: Objective value: inf
+[2024-11-29 01:34:17,877][root][INFO] - Iteration 1, response_id 79: Objective value: inf
+[2024-11-29 01:34:17,878][root][INFO] - Iteration 1, response_id 80: Objective value: inf
+[2024-11-29 01:34:17,878][root][INFO] - Iteration 1, response_id 81: Objective value: inf
+[2024-11-29 01:34:17,879][root][INFO] - Iteration 1, response_id 82: Objective value: inf
+[2024-11-29 01:34:17,879][root][INFO] - Iteration 1, response_id 83: Objective value: inf
+[2024-11-29 01:34:17,880][root][INFO] - Iteration 1, response_id 84: Objective value: inf
+[2024-11-29 01:34:17,880][root][INFO] - Iteration 1, response_id 85: Objective value: inf
+[2024-11-29 01:34:17,880][root][INFO] - Iteration 1, response_id 86: Objective value: inf
+[2024-11-29 01:34:17,882][root][INFO] - Iteration 1, response_id 87: Objective value: inf
+[2024-11-29 01:34:17,882][root][INFO] - Iteration 1, response_id 88: Objective value: inf
+[2024-11-29 01:34:17,883][root][INFO] - Iteration 1, response_id 89: Objective value: inf
+[2024-11-29 01:34:17,883][root][INFO] - Iteration 1, response_id 90: Objective value: inf
+[2024-11-29 01:34:17,884][root][INFO] - Iteration 1, response_id 91: Objective value: inf
+[2024-11-29 01:34:17,884][root][INFO] - Iteration 1, response_id 92: Objective value: inf
+[2024-11-29 01:34:17,885][root][INFO] - Iteration 1, response_id 93: Objective value: inf
+[2024-11-29 01:34:17,885][root][INFO] - Iteration 1, response_id 94: Objective value: inf
+[2024-11-29 01:34:17,885][root][INFO] - Iteration 1, response_id 95: Objective value: inf
+[2024-11-29 01:34:17,886][root][INFO] - Iteration 1, response_id 96: Objective value: inf
+[2024-11-29 01:34:17,886][root][INFO] - Iteration 1, response_id 97: Objective value: inf
+[2024-11-29 01:34:17,887][root][INFO] - Iteration 1, response_id 98: Objective value: inf
+[2024-11-29 01:34:17,887][root][INFO] - Iteration 1, response_id 99: Objective value: inf

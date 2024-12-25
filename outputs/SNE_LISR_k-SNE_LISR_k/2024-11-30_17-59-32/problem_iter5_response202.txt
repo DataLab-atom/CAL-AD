@@ -1,0 +1,9 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U using a combination of row norms and diagonal differences."""
+    diff = np.abs(np.diag(G - A))
+    row_norms = np.linalg.norm(G - A, axis=1)
+    combined_scores = diff + 0.1 * row_norms  # Adjust the weight as needed
+    indices = np.argpartition(combined_scores, -k)[-k:]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

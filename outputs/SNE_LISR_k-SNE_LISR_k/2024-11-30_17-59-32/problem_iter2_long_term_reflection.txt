@@ -1,0 +1,5 @@
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm for smoother convergence.
+2. **Gradient Correction**: Incorporate a correction term to refine updates and improve accuracy.
+3. **Convergence Check**: Ensure robust and efficient convergence criteria, prioritizing relative changes.
+4. **Matrix Updates**: Optimize matrix operations for numerical stability and faster convergence.
+5. **Line Search**: Implement line search to ensure objective function decreases with each step.

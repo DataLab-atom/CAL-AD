@@ -1,0 +1,9 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive/eval.py", line 22, in <module>
+    search_routine = getattr(module, 'search_routine')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: modul[*] Instance 4: 6.102409053976359
+[*] Average:
+5.921139949511968
+e 'search_routine'

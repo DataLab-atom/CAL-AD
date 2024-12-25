@@ -1,0 +1,16 @@
+def sherman_morrison(A_inv: np.ndarray, U: np.ndarray, V: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Compute the Sherman-Morrison update with additional robustness checks."""
+    temp = W - U.T @ A_inv @ V
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+        try:
+            temp_inv = np.linalg.pinv(temp)  # Use pseudo-inverse to handle singularity
+        except np.linalg.LinAlgError:
+            return A_inv  # Return original inverse if pseudo-inverse fails
+    else:
+        temp_inv = np.linalg.inv(temp)
+    
+    update_term = A_inv @ U @ temp_inv @ V.T @ A_inv
+    if np.any(np.isnan(update_term)) or np.any(np.isinf(update_term)):
+        return A_inv  # Return original inverse if update term is invalid
+    
+    return A_inv + update_term

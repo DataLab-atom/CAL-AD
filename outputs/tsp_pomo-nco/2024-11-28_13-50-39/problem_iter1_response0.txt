@@ -1,0 +1,44 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with enhanced exploration strategy.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    # Load multiple problems to augment the dataset for the model
+    env.load_problems(batch_size, aug_factor)
+    initial_state, _, _ = env.reset()
+    model.pre_forward(initial_state)
+
+    # Initialize variables to track the minimum reward (distance)
+    min_distance = float('inf')
+    done = False
+
+    # Run until terminal state
+    while not done:
+        current_state, _, _ = env.pre_step()
+        
+        # Get action probabilities from the model
+        action_probabilities, _ = model.forward(current_state)
+        
+        # Select action based on softmax probabilities for exploration
+        selected_action = torch.multinomial(torch.softmax(action_probabilities, dim=-1), num_samples=1)
+
+        # Step the environment with the selected action
+        next_state, reward, done = env.step(selected_action)
+
+        # Update minimum distance if better path found
+        min_distance = min(min_distance, -reward.item())  # reward is negative distance
+
+        # Update current state for next iteration
+        current_state = next_state
+
+    return min_distance  # return the minimum travel distance found
+```

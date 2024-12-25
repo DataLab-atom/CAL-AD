@@ -1,0 +1,135 @@
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+2. **Avoid Gradient Clipping**: Use adaptive scaling instead to prevent explosion.
+3. **Greedy Updates**: Prioritize significant changes for faster convergence.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Adaptive Scaling**: Dynamically adjust step size.
+3. **Greedy Updates**: Prioritize significant changes.
+4. **Convergence Criteria**: Monitor norm difference.
+5. **Matrix Updates**: Efficiently update inverse matrices.
+1. **Adaptive Scaling**: Use gradient norm for dynamic step size.
+2. **Greedy Updates**: Prioritize significant components in matrix updates.
+3. **Convergence Check**: Early exit on small change in solution.
+Combine Newton-like steps with adaptive gradient descent for robust convergence.
+1. **Adaptive scaling**: Adjust `omega` based on gradient norm and iteration count.
+2. **Gradient correction**: Subtract corrected gradient from `x_new` to refine updates.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term in the update step.
+1. **Adaptive Scaling**: Use iteration-dependent scaling factors for more dynamic convergence.
+2. **Gradient Correction**: Incorporate relative gradient corrections for improved accuracy.
+3. **Norm Normalization**: Normalize gradient norms with iteration count for stability.
+Use adaptive scaling and gradient clipping to stabilize updates and prevent divergence.
+1. **Ensure consistent update direction**: Use `x + alpha * (x_new - x)` instead of `x - alpha * (x_new - x)`.
+2. **Monitor convergence more strictly**: Consider additional criteria like function value change.
+1. **Adaptive scaling**: Use sqrt(grad_norm) for smoother convergence.
+2. **Gradient correction**: Incorporate actual gradient for more accurate updates.
+Use adaptive step size with backtracking for gradient descent.
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+2. **Line Search**: Ensure step size reduction until objective improves.
+3. **Greedy Updates**: Prioritize updates that maximize immediate improvement.
+1. **Gradient Correction**: Use gradient correction to refine updates.
+2. **Adaptive Scaling**: Adjust scaling dynamically based on gradient magnitude.
+3. **Convergence Check**: Ensure convergence check is robust and efficient.
+1. **Adaptive Step Size**: Dynamically adjust `omega` based on gradient norms.
+2. **Gradient Correction**: Incorporate `grad_correction` for more accurate updates.
+3. **Matrix Updates**: Efficiently update `B_bar_inv` using `sherman_morrison`.
+4. **Convergence Check**: Early termination if `np.linalg.norm(x_new - x) < tol`.
+1. **Gradient Clipping**: Prevent gradient explosion with clipping.
+2. **Adaptive Scaling**: Dynamically adjust step size for stability.
+3. **Greedy Updates**: Prioritize significant changes for faster convergence.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term to refine the gradient.
+3. **Convergence Check**: Ensure `tol` is sensitive to problem scale.
+4. **Initial Bounds**: Use problem-specific bounds for `L` and `mu`.
+5. **Matrix Updates**: Optimize `B_bar_inv` updates for numerical stability.
+1. **Gradient Clipping**: Prevent gradient explosion by clipping norms.
+2. **Adaptive Scaling**: Dynamically adjust step size based on gradient norms.
+3. **Early Stopping**: Break early if convergence criteria met.
+4. **Matrix Updates**: Efficiently update matrices using Sherman-Morrison.
+5. **Greedy Selection**: Use greedy matrix selection for stability.
+1. **Adaptive Scaling**: Prioritize adaptive scaling based on gradient magnitude.
+2. **Gradient Correction**: Integrate gradient correction directly into the update step.
+3. **Convergence Check**: Ensure convergence check is robust and efficient.
+1. **Gradient Clipping**: Prevent gradient explosion by clipping norms.
+2. **Adaptive Scaling**: Dynamically adjust step size based on gradient norms.
+3. **Line Search**: Ensure step size reduction for convergence.
+4. **Matrix Updates**: Efficiently update matrices using Sherman-Morrison.
+1. **Gradient Clipping**: Prevent gradient explosion for stability.
+2. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+3. **Line Search**: Ensure objective function decreases with each step.
+Combine Newton-like steps with adaptive gradient descent for improved convergence.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient norm.
+2. **Gradient Correction**: Apply a correction step to refine `x_new`.
+3. **Avoid Clipping**: Use adaptive methods instead of gradient clipping.
+1. **Adaptive Step Size**: Use line search for gradient descent.
+2. **Gradient Correction**: Combine Newton-like steps with gradient descent.
+3. **Convergence Check**: Ensure updates are significant before breaking.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term in the update step.
+3. **Avoid Clipping**: Use adaptive scaling instead of gradient clipping.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term to refine the update step.
+1. **Gradient Clipping**: Prevent gradient explosion.
+2. **Adaptive Scaling**: Dynamically adjust step size.
+3. **Matrix Updates**: Efficiently update B_bar_inv.
+4. **Convergence Check**: Early termination on tolerance.
+1. **Adaptive Scaling**: Adjust `omega` based on gradient magnitude and iteration count.
+2. **Gradient Correction**: Incorporate a correction term in the update step.
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+2. **Avoid Gradient Clipping**: Use adaptive scaling instead to prevent explosion.
+3. **Greedy Updates**: Prioritize updates that significantly reduce the objective.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Subtract `grad_correction` from `grad_sum` before updating `x`.
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+2. **Line Search**: Ensure objective function decreases with each step.
+1. **Line Search**: Ensure updates decrease objective function.
+2. **Adaptive Scaling**: Adjust based on current gradient norm.
+3. **Convergence Check**: Use relative change in `x` for early stopping.
+1. **Adaptive Scaling**: Use gradient correction for dynamic scaling.
+2. **Gradient Clipping**: Avoid extreme values with clipping.
+3. **Initial Bounds**: Ensure consistent L and mu estimates.
+4. **Convergence Check**: Prioritize relative change over absolute.
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term to improve convergence.
+3. **Avoid Gradient Clipping**: Use adaptive scaling instead to handle large gradients.
+1. **Line Search**: Implement line search for step size adjustment.
+2. **Gradient Norm**: Compute gradient norm before adaptive scaling.
+3. **Update Order**: Update `x_new` before line search.
+1. **Gradient Clipping**: Prevent gradient explosion for stability.
+2. **Adaptive Step Size**: Dynamically adjust step size based on function change.
+3. **Initial Guess**: Improve `x0` for faster convergence.
+4. **Regularization**: Add regularization terms to `B_bar_inv` updates.
+5. **Early Stopping**: Monitor gradient norm for early termination.
+Combine Newton-like steps with adaptive gradient descent for faster convergence. Adjust step size dynamically based on performance.
+1. **Adaptive Scaling**: Use current gradient norm for dynamic scaling.
+2. **Greedy Updates**: Prioritize significant components in matrix updates.
+3. **Convergence Check**: Simplify termination condition for efficiency.
+1. **Adaptive Scaling**: Use inverse gradient norm for scaling.
+2. **Line Search**: Ensure objective decreases with each step.
+3. **Remove Gradient Correction**: Simplify by focusing on line search.
+1. **Adaptive Scaling**: Dynamically adjust step size based on gradient norm.
+2. **Greedy Updates**: Prioritize significant changes in matrix updates.
+3. **Convergence Check**: Early termination on small updates.
+1. **Gradient Correction**: Apply adaptive scaling post-update for better convergence.
+2. **Line Search**: Ensure objective decreases before scaling for stability.
+3. **Matrix Updates**: Optimize `B_bar_inv` updates for numerical stability.
+1. **Adaptive Scaling**: Dynamically adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate a correction term in the update step.
+3. **Convergence Check**: Ensure `tol` is sensitive to both position and gradient changes.
+Combine Newton-like steps with adaptive gradient descent for faster convergence.
+1. **Adaptive Scaling**: Normalize `x_new` by `grad_norm` to stabilize updates.
+2. **Gradient Correction**: Apply a small correction step to refine `x_new`.
+Prioritize gradient clipping before scaling; ensure consistent update order.
+1. **Gradient Correction**: Use corrected gradient for adaptive scaling.
+2. **Step Size**: Dynamically adjust step size based on objective change.
+3. **Matrix Updates**: Optimize matrix update strategies for faster convergence.
+Combine Newton-like steps with adaptive gradient descent for faster convergence.
+1. **Adjust gradient clipping threshold** (1e6 to 1e5).
+2. **Optimize matrix operations** (e.g., `np.sum` vs `np.dot`).
+3. **Dynamic `omega` computation** (adapt based on convergence).
+1. **Adaptive Scaling**: Adjust `omega` based on gradient magnitude.
+2. **Gradient Correction**: Incorporate `grad_correction` in updates.
+3. **Line Search**: Remove redundant line search in better version.
+1. **Gradient Clipping**: Prevent gradient explosion by clipping norms.
+2. **Adaptive Scaling**: Dynamically adjust step size based on gradient norms.
+3. **Matrix Updates**: Efficiently update matrices using rank-k approximations.
+Use fixed gradient clipping values for stability.

@@ -1,0 +1,90 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    min_distance = float('inf')
+    current_path = []
+
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+        # Update the current path
+        current_path.append(selected)
+
+        # Calculate the current distance
+        current_distance = -reward.item()
+
+        # Apply a heuristic: 2-opt local search
+        improved_distance = apply_2_opt(current_path, env.problems)
+
+        # Update the minimum distance if the heuristic improves it
+        if improved_distance < current_distance:
+            current_distance = improved_distance
+            min_distance = min(min_distance, current_distance)
+
+    return min_distance
+
+def apply_2_opt(path, problems):
+    """
+    Applies the 2-opt heuristic to improve the path.
+
+    Args:
+        path: The current path.
+        problems: The TSP problems.
+
+    Returns:
+        The improved distance.
+    """
+    improved = True
+    best_path = path[:]
+    best_distance = calculate_distance(best_path, problems)
+
+    while improved:
+        improved = False
+        for i in range(1, len(best_path) - 2):
+            for j in range(i + 1, len(best_path)):
+                if j - i == 1: continue  # No improvement if adjacent
+                new_path = best_path[:]
+                new_path[i:j] = best_path[j - 1:i - 1:-1]
+                new_distance = calculate_distance(new_path, problems)
+                if new_distance < best_distance:
+                    best_distance = new_distance
+                    best_path = new_path
+                    improved = True
+
+    return best_distance
+
+def calculate_distance(path, problems):
+    """
+    Calculates the total distance of the path.
+
+    Args:
+        path: The path to calculate the distance for.
+        problems: The TSP problems.
+
+    Returns:
+        The total distance.
+    """
+    total_distance = 0
+    for i in range(len(path) - 1):
+        total_distance += torch.norm(problems[path[i]] - problems[path[i + 1]], p=2)
+    total_distance += torch.norm(problems[path[-1]] - problems[path[0]], p=2)  # Return to start
+    return total_distance.item()
+```

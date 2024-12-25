@@ -1,0 +1,5 @@
+[*] Running ...
+E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\quadratic_function.py:67: RuntimeWarning: overflow encountered in scalar add
+  f_x += quadratic_term + linear_term
+[*] Average:
+inf

@@ -1,0 +1,656 @@
+[2024-11-28 13:59:17,857][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_pomo-nco\2024-11-28_13-59-17
+[2024-11-28 13:59:17,858][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 13:59:17,859][root][INFO] - Using LLM: gpt-4o-mini
+[2024-11-28 13:59:17,859][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 13:59:19,436][root][INFO] - Problem: tsp_pomo
+[2024-11-28 13:59:19,438][root][INFO] - Problem description: Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-28 13:59:19,439][root][INFO] - Functions name: [search_routine,_run_episode]
+[2024-11-28 13:59:19,445][root][INFO] - Evaluating seed function...
+[2024-11-28 13:59:19,446][root][INFO] - Seed function code: 
+from numpy.linalg import inv, norm, pinv
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+from dataclasses import dataclass
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+[2024-11-28 13:59:19,449][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 13:59:23,196][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 13:59:40,775][root][INFO] - Iteration 0, response_id 0: Objective value: 12.578914642333984
+[2024-11-28 13:59:40,776][root][INFO] - Iteration 0: Elitist: 12.578914642333984
+[2024-11-28 13:59:40,776][root][INFO] - Iteration 0 finished...
+[2024-11-28 13:59:40,776][root][INFO] - Best obj: 12.578914642333984,Best obj func index: 1, Best Code Path: problem_iter0_code0.py
+[2024-11-28 13:59:40,776][root][INFO] - Function Evals: 1
+[2024-11-28 13:59:40,776][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `search_routine` has been selected from this document.
+Write a new `search_routine` for problem:
+Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `search_routine` function is designed to utilize a pre-trained model to solve the Traveling Salesman Problem (TSP) by finding the minimum total distance of a valid route across several episodes. It takes the following inputs: `env`, which represents the TSP environment; `model`, which is the pre-trained TSP model; `episodes`, which indicates how many runs of the search should be executed; `batch_size`, which determines the number of problems processed at once (defaulting to 10); and `aug_factor`, which specifies the augmentation factor for the input data (defaulting to 8). The function returns a float value that represents the average total distance of the minimum valid solutions computed over the specified episodes, thus providing insight into the model's performance in predicting efficient TSP solutions.
+
+markdown document:
+```python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+``````python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+```
+
+```python
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `search_routine_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 13:59:55,213][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 13:59:55,260][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `_run_episode` has been selected from this document.
+Write a new `_run_episode` for problem:
+Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+
+Function description:
+The `_run_episode` function is designed to run a single episode of the Traveling Salesman Problem (TSP) within a given environment. It accepts the following inputs: `env`, which is the TSP environment; `model`, a pre-trained model for solving the TSP; `batch_size`, the number of problems processed in one go; and `aug_factor`, an augmentation factor for the data. During the execution of the function, it loads a set of problems based on the batch size and augmentation factor, resets the environment, and then iteratively steps through the environment using the model to select actions based on the current state until a terminal condition is met. The output of the function is a float representing the minimum travel distance found in that episode, calculated from the negative reward associated with the distance traveled.
+
+markdown document:
+```python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+``````python
+from TSPEnv import TSPEnv as Env
+from TSPModel import TSPModel as Model
+import torch
+import numpy as np
+
+def search_routine(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Uses a pre-trained model to determine the minimum total distance for the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+
+    total_distance = 0
+    for _ in range(int(episodes)):
+        total_distance += _run_episode(env, model, batch_size, aug_factor)
+
+    return total_distance / episodes
+
+
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+
+
+if __name__ == "__main__":
+    # Test code here
+    env_params = {'problem_size': 5, 'pomo_size': 1, 'test_file_path': None}
+    model_params = {'embedding_dim': 128, 'sqrt_embedding_dim': 128**0.5, 'logit_clipping': 10,
+                    'qkv_dim': 16, 'head_num': 8, 'encoder_layer_num': 3, 'ff_hidden_dim': 512,
+                    'eval_type': 'softmax'}
+
+    env = Env(**env_params)
+    model = Model(**model_params)
+
+    episodes = 1
+    batch_size = 1
+    aug_factor = 1
+
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance: {total_distance}")
+
+    # Test with a specific problem
+    test_problems = torch.tensor([[[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]])
+    torch.save(test_problems, 'test_problems.pt')
+    env_params['test_file_path'] = 'test_problems.pt'
+    env = Env(**env_params)
+    total_distance = search_routine(env, model, episodes, batch_size, aug_factor)
+    print(f"Total distance for specific problem: {total_distance}")
+
+```
+
+```python
+def _run_episode(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+    return -reward.min().item()  # reward is negative distance
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `_run_episode_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 14:00:05,223][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 14:00:05,252][root][INFO] - Iteration 1: Running Code 0
+[2024-11-28 14:00:09,252][root][INFO] - Iteration 1: Code Run 0 successful!
+[2024-11-28 14:00:09,252][root][INFO] - Iteration 1: Running Code 1
+[2024-11-28 14:00:13,992][root][INFO] - Iteration 1: Code Run 1 successful!
+[2024-11-28 14:00:13,993][root][INFO] - Iteration 1: Running Code 2
+[2024-11-28 14:00:19,958][root][INFO] - Iteration 1: Code Run 2 successful!
+[2024-11-28 14:00:19,958][root][INFO] - Iteration 1: Running Code 3
+[2024-11-28 14:00:26,358][root][INFO] - Iteration 1: Code Run 3 successful!
+[2024-11-28 14:00:26,359][root][INFO] - Iteration 1: Running Code 4
+[2024-11-28 14:00:32,928][root][INFO] - Iteration 1: Code Run 4 successful!
+[2024-11-28 14:00:32,930][root][INFO] - Iteration 1: Running Code 5
+[2024-11-28 14:00:39,692][root][INFO] - Iteration 1: Code Run 5 successful!
+[2024-11-28 14:00:39,694][root][INFO] - Iteration 1: Running Code 6
+[2024-11-28 14:00:46,670][root][INFO] - Iteration 1: Code Run 6 successful!
+[2024-11-28 14:00:46,673][root][INFO] - Iteration 1: Running Code 7
+[2024-11-28 14:00:53,875][root][INFO] - Iteration 1: Code Run 7 successful!
+[2024-11-28 14:00:53,876][root][INFO] - Iteration 1: Running Code 8
+[2024-11-28 14:01:01,425][root][INFO] - Iteration 1: Code Run 8 successful!
+[2024-11-28 14:01:01,429][root][INFO] - Iteration 1: Running Code 9
+[2024-11-28 14:01:08,820][root][INFO] - Iteration 1: Code Run 9 successful!
+[2024-11-28 14:01:08,823][root][INFO] - Iteration 1: Running Code 10
+[2024-11-28 14:01:16,388][root][INFO] - Iteration 1: Code Run 10 successful!
+[2024-11-28 14:01:16,394][root][INFO] - Iteration 1: Running Code 11
+[2024-11-28 14:01:23,843][root][INFO] - Iteration 1: Code Run 11 successful!
+[2024-11-28 14:01:23,845][root][INFO] - Iteration 1: Running Code 12
+[2024-11-28 14:01:32,134][root][INFO] - Iteration 1: Code Run 12 successful!
+[2024-11-28 14:01:32,145][root][INFO] - Iteration 1: Running Code 13
+[2024-11-28 14:01:40,823][root][INFO] - Iteration 1: Code Run 13 successful!
+[2024-11-28 14:01:40,825][root][INFO] - Iteration 1: Running Code 14
+[2024-11-28 14:01:50,234][root][INFO] - Iteration 1: Code Run 14 successful!
+[2024-11-28 14:01:50,235][root][INFO] - Iteration 1: Running Code 15
+[2024-11-28 14:01:59,462][root][INFO] - Iteration 1: Code Run 15 successful!
+[2024-11-28 14:01:59,463][root][INFO] - Iteration 1: Running Code 16
+[2024-11-28 14:02:08,152][root][INFO] - Iteration 1: Code Run 16 successful!
+[2024-11-28 14:02:08,155][root][INFO] - Iteration 1: Running Code 17
+[2024-11-28 14:02:15,735][root][INFO] - Iteration 1: Code Run 17 successful!
+[2024-11-28 14:02:15,736][root][INFO] - Iteration 1: Running Code 18
+[2024-11-28 14:02:22,760][root][INFO] - Iteration 1: Code Run 18 successful!
+[2024-11-28 14:02:22,760][root][INFO] - Iteration 1: Running Code 19
+[2024-11-28 14:02:29,442][root][INFO] - Iteration 1: Code Run 19 successful!
+[2024-11-28 14:02:29,443][root][INFO] - Iteration 1: Running Code 20
+[2024-11-28 14:02:36,583][root][INFO] - Iteration 1: Code Run 20 successful!
+[2024-11-28 14:02:36,583][root][INFO] - Iteration 1: Running Code 21
+[2024-11-28 14:02:44,175][root][INFO] - Iteration 1: Code Run 21 successful!
+[2024-11-28 14:02:44,176][root][INFO] - Iteration 1: Running Code 22
+[2024-11-28 14:02:51,488][root][INFO] - Iteration 1: Code Run 22 successful!
+[2024-11-28 14:02:51,490][root][INFO] - Iteration 1: Running Code 23
+[2024-11-28 14:02:57,869][root][INFO] - Iteration 1: Code Run 23 successful!
+[2024-11-28 14:02:57,872][root][INFO] - Iteration 1: Running Code 24
+[2024-11-28 14:03:05,171][root][INFO] - Iteration 1: Code Run 24 successful!
+[2024-11-28 14:03:05,172][root][INFO] - Iteration 1: Running Code 25
+[2024-11-28 14:03:13,076][root][INFO] - Iteration 1: Code Run 25 successful!
+[2024-11-28 14:03:13,078][root][INFO] - Iteration 1: Running Code 26
+[2024-11-28 14:03:21,500][root][INFO] - Iteration 1: Code Run 26 successful!
+[2024-11-28 14:03:21,503][root][INFO] - Iteration 1: Running Code 27
+[2024-11-28 14:03:30,346][root][INFO] - Iteration 1: Code Run 27 successful!
+[2024-11-28 14:03:30,349][root][INFO] - Iteration 1: Running Code 28
+[2024-11-28 14:03:39,154][root][INFO] - Iteration 1: Code Run 28 successful!
+[2024-11-28 14:03:39,156][root][INFO] - Iteration 1: Running Code 29
+[2024-11-28 14:03:47,726][root][INFO] - Iteration 1: Code Run 29 successful!
+[2024-11-28 14:03:47,729][root][INFO] - Iteration 1: Running Code 30
+[2024-11-28 14:03:56,543][root][INFO] - Iteration 1: Code Run 30 successful!
+[2024-11-28 14:03:56,545][root][INFO] - Iteration 1: Running Code 31
+[2024-11-28 14:04:05,704][root][INFO] - Iteration 1: Code Run 31 successful!
+[2024-11-28 14:04:05,707][root][INFO] - Iteration 1: Running Code 32
+[2024-11-28 14:04:14,714][root][INFO] - Iteration 1: Code Run 32 successful!
+[2024-11-28 14:04:14,716][root][INFO] - Iteration 1: Running Code 33
+[2024-11-28 14:04:22,914][root][INFO] - Iteration 1: Code Run 33 successful!
+[2024-11-28 14:04:22,916][root][INFO] - Iteration 1: Running Code 34
+[2024-11-28 14:04:30,720][root][INFO] - Iteration 1: Code Run 34 successful!
+[2024-11-28 14:04:30,721][root][INFO] - Iteration 1: Running Code 35
+[2024-11-28 14:04:37,818][root][INFO] - Iteration 1: Code Run 35 successful!
+[2024-11-28 14:04:37,818][root][INFO] - Iteration 1: Running Code 36
+[2024-11-28 14:04:44,755][root][INFO] - Iteration 1: Code Run 36 successful!
+[2024-11-28 14:04:44,755][root][INFO] - Iteration 1: Running Code 37
+[2024-11-28 14:04:49,664][root][INFO] - Iteration 1: Code Run 37 successful!
+[2024-11-28 14:04:49,665][root][INFO] - Iteration 1: Running Code 38
+[2024-11-28 14:04:53,805][root][INFO] - Iteration 1: Code Run 38 successful!
+[2024-11-28 14:04:53,806][root][INFO] - Iteration 1: Running Code 39
+[2024-11-28 14:04:57,764][root][INFO] - Iteration 1: Code Run 39 successful!
+[2024-11-28 14:04:57,764][root][INFO] - Iteration 1: Running Code 40
+[2024-11-28 14:05:01,705][root][INFO] - Iteration 1: Code Run 40 successful!
+[2024-11-28 14:05:01,706][root][INFO] - Iteration 1: Running Code 41
+[2024-11-28 14:05:05,557][root][INFO] - Iteration 1: Code Run 41 successful!
+[2024-11-28 14:05:05,557][root][INFO] - Iteration 1: Running Code 42
+[2024-11-28 14:05:09,471][root][INFO] - Iteration 1: Code Run 42 successful!
+[2024-11-28 14:05:09,471][root][INFO] - Iteration 1: Running Code 43
+[2024-11-28 14:05:13,521][root][INFO] - Iteration 1: Code Run 43 successful!
+[2024-11-28 14:05:13,521][root][INFO] - Iteration 1: Running Code 44
+[2024-11-28 14:05:17,488][root][INFO] - Iteration 1: Code Run 44 successful!
+[2024-11-28 14:05:17,489][root][INFO] - Iteration 1: Running Code 45
+[2024-11-28 14:05:21,490][root][INFO] - Iteration 1: Code Run 45 successful!
+[2024-11-28 14:05:21,490][root][INFO] - Iteration 1: Running Code 46
+[2024-11-28 14:05:25,419][root][INFO] - Iteration 1: Code Run 46 successful!
+[2024-11-28 14:05:25,419][root][INFO] - Iteration 1: Running Code 47
+[2024-11-28 14:05:29,376][root][INFO] - Iteration 1: Code Run 47 successful!
+[2024-11-28 14:05:29,376][root][INFO] - Iteration 1: Running Code 48
+[2024-11-28 14:05:33,303][root][INFO] - Iteration 1: Code Run 48 successful!
+[2024-11-28 14:05:33,304][root][INFO] - Iteration 1: Running Code 49
+[2024-11-28 14:05:37,138][root][INFO] - Iteration 1: Code Run 49 successful!
+[2024-11-28 14:05:37,139][root][INFO] - Iteration 1: Running Code 50
+[2024-11-28 14:05:41,059][root][INFO] - Iteration 1: Code Run 50 successful!
+[2024-11-28 14:05:41,059][root][INFO] - Iteration 1: Running Code 51
+[2024-11-28 14:05:44,968][root][INFO] - Iteration 1: Code Run 51 successful!
+[2024-11-28 14:05:44,968][root][INFO] - Iteration 1: Running Code 52
+[2024-11-28 14:05:48,835][root][INFO] - Iteration 1: Code Run 52 successful!
+[2024-11-28 14:05:48,836][root][INFO] - Iteration 1: Running Code 53
+[2024-11-28 14:05:52,724][root][INFO] - Iteration 1: Code Run 53 successful!
+[2024-11-28 14:05:52,724][root][INFO] - Iteration 1: Running Code 54
+[2024-11-28 14:05:56,640][root][INFO] - Iteration 1: Code Run 54 successful!
+[2024-11-28 14:05:56,641][root][INFO] - Iteration 1: Running Code 55
+[2024-11-28 14:06:00,555][root][INFO] - Iteration 1: Code Run 55 successful!
+[2024-11-28 14:06:00,556][root][INFO] - Iteration 1: Running Code 56
+[2024-11-28 14:06:04,431][root][INFO] - Iteration 1: Code Run 56 successful!
+[2024-11-28 14:06:04,432][root][INFO] - Iteration 1: Running Code 57
+[2024-11-28 14:06:08,296][root][INFO] - Iteration 1: Code Run 57 successful!
+[2024-11-28 14:06:08,296][root][INFO] - Iteration 1: Running Code 58
+[2024-11-28 14:06:12,235][root][INFO] - Iteration 1: Code Run 58 successful!
+[2024-11-28 14:06:12,236][root][INFO] - Iteration 1: Running Code 59
+[2024-11-28 14:06:16,218][root][INFO] - Iteration 1: Code Run 59 successful!
+[2024-11-28 14:06:16,232][root][INFO] - Iteration 1, response_id 0: Objective value: inf
+[2024-11-28 14:06:16,245][root][INFO] - Iteration 1, response_id 1: Objective value: inf
+[2024-11-28 14:06:16,258][root][INFO] - Iteration 1, response_id 2: Objective value: inf
+[2024-11-28 14:06:16,272][root][INFO] - Iteration 1, response_id 3: Objective value: inf
+[2024-11-28 14:06:16,284][root][INFO] - Iteration 1, response_id 4: Objective value: inf
+[2024-11-28 14:06:16,297][root][INFO] - Iteration 1, response_id 5: Objective value: inf
+[2024-11-28 14:06:16,309][root][INFO] - Iteration 1, response_id 6: Objective value: inf
+[2024-11-28 14:06:16,321][root][INFO] - Iteration 1, response_id 7: Objective value: inf
+[2024-11-28 14:06:16,333][root][INFO] - Iteration 1, response_id 8: Objective value: inf
+[2024-11-28 14:06:16,346][root][INFO] - Iteration 1, response_id 9: Objective value: inf
+[2024-11-28 14:06:16,360][root][INFO] - Iteration 1, response_id 10: Objective value: inf
+[2024-11-28 14:06:16,372][root][INFO] - Iteration 1, response_id 11: Objective value: inf
+[2024-11-28 14:06:16,385][root][INFO] - Iteration 1, response_id 12: Objective value: inf
+[2024-11-28 14:06:16,399][root][INFO] - Iteration 1, response_id 13: Objective value: inf
+[2024-11-28 14:06:16,413][root][INFO] - Iteration 1, response_id 14: Objective value: inf
+[2024-11-28 14:06:16,425][root][INFO] - Iteration 1, response_id 15: Objective value: inf
+[2024-11-28 14:06:16,437][root][INFO] - Iteration 1, response_id 16: Objective value: inf
+[2024-11-28 14:06:16,448][root][INFO] - Iteration 1, response_id 17: Objective value: inf
+[2024-11-28 14:06:16,461][root][INFO] - Iteration 1, response_id 18: Objective value: inf
+[2024-11-28 14:06:16,473][root][INFO] - Iteration 1, response_id 19: Objective value: inf
+[2024-11-28 14:06:16,485][root][INFO] - Iteration 1, response_id 20: Objective value: inf
+[2024-11-28 14:06:16,498][root][INFO] - Iteration 1, response_id 21: Objective value: inf
+[2024-11-28 14:06:16,511][root][INFO] - Iteration 1, response_id 22: Objective value: inf
+[2024-11-28 14:06:16,524][root][INFO] - Iteration 1, response_id 23: Objective value: inf
+[2024-11-28 14:06:16,538][root][INFO] - Iteration 1, response_id 24: Objective value: inf
+[2024-11-28 14:06:16,550][root][INFO] - Iteration 1, response_id 25: Objective value: inf
+[2024-11-28 14:06:16,562][root][INFO] - Iteration 1, response_id 26: Objective value: inf
+[2024-11-28 14:06:16,574][root][INFO] - Iteration 1, response_id 27: Objective value: inf
+[2024-11-28 14:06:16,586][root][INFO] - Iteration 1, response_id 28: Objective value: inf
+[2024-11-28 14:06:16,587][root][INFO] - Iteration 1, response_id 29: Objective value: inf
+[2024-11-28 14:06:16,587][root][INFO] - Iteration 1, response_id 30: Objective value: inf
+[2024-11-28 14:06:16,588][root][INFO] - Iteration 1, response_id 31: Objective value: inf
+[2024-11-28 14:06:16,588][root][INFO] - Iteration 1, response_id 32: Objective value: inf
+[2024-11-28 14:06:16,590][root][INFO] - Iteration 1, response_id 33: Objective value: inf
+[2024-11-28 14:06:16,590][root][INFO] - Iteration 1, response_id 34: Objective value: inf
+[2024-11-28 14:06:16,590][root][INFO] - Iteration 1, response_id 35: Objective value: inf
+[2024-11-28 14:06:16,591][root][INFO] - Iteration 1, response_id 36: Objective value: inf
+[2024-11-28 14:06:16,591][root][INFO] - Iteration 1, response_id 37: Objective value: inf
+[2024-11-28 14:06:16,592][root][INFO] - Iteration 1, response_id 38: Objective value: inf
+[2024-11-28 14:06:16,592][root][INFO] - Iteration 1, response_id 39: Objective value: inf
+[2024-11-28 14:06:16,593][root][INFO] - Iteration 1, response_id 40: Objective value: inf
+[2024-11-28 14:06:16,593][root][INFO] - Iteration 1, response_id 41: Objective value: inf
+[2024-11-28 14:06:16,594][root][INFO] - Iteration 1, response_id 42: Objective value: inf
+[2024-11-28 14:06:16,594][root][INFO] - Iteration 1, response_id 43: Objective value: inf
+[2024-11-28 14:06:16,595][root][INFO] - Iteration 1, response_id 44: Objective value: inf
+[2024-11-28 14:06:16,595][root][INFO] - Iteration 1, response_id 45: Objective value: inf
+[2024-11-28 14:06:16,596][root][INFO] - Iteration 1, response_id 46: Objective value: inf
+[2024-11-28 14:06:16,596][root][INFO] - Iteration 1, response_id 47: Objective value: inf
+[2024-11-28 14:06:16,597][root][INFO] - Iteration 1, response_id 48: Objective value: inf
+[2024-11-28 14:06:16,597][root][INFO] - Iteration 1, response_id 49: Objective value: inf
+[2024-11-28 14:06:16,599][root][INFO] - Iteration 1, response_id 50: Objective value: inf
+[2024-11-28 14:06:16,599][root][INFO] - Iteration 1, response_id 51: Objective value: inf
+[2024-11-28 14:06:16,599][root][INFO] - Iteration 1, response_id 52: Objective value: inf
+[2024-11-28 14:06:16,600][root][INFO] - Iteration 1, response_id 53: Objective value: inf
+[2024-11-28 14:06:16,600][root][INFO] - Iteration 1, response_id 54: Objective value: inf
+[2024-11-28 14:06:16,600][root][INFO] - Iteration 1, response_id 55: Objective value: inf
+[2024-11-28 14:06:16,601][root][INFO] - Iteration 1, response_id 56: Objective value: inf
+[2024-11-28 14:06:16,601][root][INFO] - Iteration 1, response_id 57: Objective value: inf
+[2024-11-28 14:06:16,603][root][INFO] - Iteration 1, response_id 58: Objective value: inf
+[2024-11-28 14:06:17,792][root][INFO] - Iteration 1, response_id 59: Objective value: inf

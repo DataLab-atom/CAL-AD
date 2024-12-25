@@ -1,0 +1,22 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on a more sophisticated criterion."""
+    # Compute the Frobenius norm of the difference between G and A
+    frobenius_norm = np.linalg.norm(G - A, 'fro')
+    
+    # Compute the element-wise difference between G and A
+    element_diff = np.abs(G - A)
+    
+    # Compute the weighted difference based on the Frobenius norm
+    weighted_diff = element_diff / frobenius_norm
+    
+    # Select the top k indices based on the weighted difference
+    indices = np.argsort(weighted_diff.flatten())[::-1][:k]
+    
+    # Convert the flattened indices back to 2D indices
+    row_indices, col_indices = np.unravel_index(indices, G.shape)
+    
+    # Create the selection matrix U
+    U = np.zeros((G.shape[0], k))
+    U[row_indices, np.arange(k)] = 1
+    
+    return U

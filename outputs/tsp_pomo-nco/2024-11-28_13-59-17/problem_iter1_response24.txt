@@ -1,0 +1,38 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs an enhanced single episode of the TSP problem with adaptive exploration.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    state, _, _ = env.reset()
+    model.pre_forward(state)
+
+    total_reward = 0
+    done = False
+    steps = 0
+    max_steps = 1000  # Limit to avoid infinite loops in case of issues
+
+    while not done and steps < max_steps:
+        state, _, _ = env.pre_step()
+        
+        # Adaptive exploration: introduce a randomness factor to avoid local optima
+        if np.random.rand() < 0.1:  # 10% chance to explore
+            selected = np.random.choice(env.get_available_actions(state))
+        else:
+            selected, _ = model.forward(state)
+
+        step_state, reward, done = env.step(selected)
+        total_reward += reward
+        steps += 1
+
+    return -total_reward  # reward is negative distance
+```

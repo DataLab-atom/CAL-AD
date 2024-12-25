@@ -1,0 +1,19 @@
+[*] Running ...
+Initial population avg. reward: 10.308501182084324
+Generation 0 - Elite reward: 11.8997 - Best reward: 12.3069
+Generation 1 - Elite reward: 12.0974 - Best reward: 12.3069
+Generation 2 - Elite reward: 12.0974 - Best reward: 12.3069
+Generation 3 - Elite reward: 12.2704 - Best reward: 12.3069
+Generation 4 - Elite reward: 12.2985 - Best reward: 12.3286
+Best solution: [ 1 93 98 51 70 63 89  7 71 88 10 60 72 19 90 80  4 12 38 77]
+Best reward: 12.328584451247584
+--- 28.602113723754883 seconds ---
+Initial population avg. reward: 9.975501880142932
+Generation 0 - Elite reward: 10.9444 - Best reward: 11.6876
+Generation 1 - Elite reward: 11.4158 - Best reward: 11.6876
+Generation 2 - Elite reward: 11.6122 - Best reward: 11.6876
+Generation 3 - Elite reward: 11.6599 - Best reward: 11.6876
+Generation 4 - Elite reward: 11.6876 - Best reward: 11.6876
+Best solution: [88 87 82 85 15 46 42 14 24 62 41 56 81 73 51 17 71 86 54 69]
+Best reward: 11.68758725500138
+--- 29.557074069976807 seconds ---

@@ -1,0 +1,8 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on the largest absolute diagonal differences."""
+    diff = np.abs(np.diag(G - A))
+    indices = np.argpartition(diff, -k)[-k:]  # Efficient partial sort
+    indices = indices[np.argsort(diff[indices])[::-1]]  # Sort the top k indices
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

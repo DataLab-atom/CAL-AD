@@ -1,0 +1,68 @@
+```python
+def search_routine_v2(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Executes an enhanced POMO algorithm for the TSP with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: Size of the problem batch.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+    model.eval()
+    model.to(model.device)  # Ensure model is on the correct device
+
+    env.load_problems(batch_size, aug_factor)
+    total_reward = 0
+    min_distance = float('inf')
+
+    for _ in range(int(episodes)):
+        rewards = _run_episode(env, model)
+        total_reward += rewards.mean().item()
+        current_distance = -rewards.mean().item()
+        if current_distance < min_distance:
+            min_distance = current_distance
+        torch.cuda.empty_cache()  # Clear GPU cache
+
+    # Apply a simple heuristic to refine the solution
+    def heuristic_refinement(env, model, min_distance):
+        # Example heuristic: 2-opt local search
+        def two_opt(route, dist_matrix):
+            best = route
+            improved = True
+            while improved:
+                improved = False
+                for i in range(1, len(route) - 2):
+                    for j in range(i + 1, len(route)):
+                        if j - i == 1: continue  # No need to reverse a single edge
+                        new_route = route[:]
+                        new_route[i:j] = route[j - 1:i - 1:-1]
+                        if _calculate_route_distance(new_route, dist_matrix) < _calculate_route_distance(best, dist_matrix):
+                            best = new_route
+                            improved = True
+                route = best
+            return best
+
+        def _calculate_route_distance(route, dist_matrix):
+            return sum(dist_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + dist_matrix[route[-1]][route[0]]
+
+        # Load the problem and get the distance matrix
+        problems = env.get_problems()
+        dist_matrix = problems.squeeze().cpu().numpy()
+
+        # Get the current best route from the model
+        route = env.get_current_route()
+
+        # Apply 2-opt heuristic
+        refined_route = two_opt(route, dist_matrix)
+        refined_distance = _calculate_route_distance(refined_route, dist_matrix)
+
+        return refined_distance
+
+    refined_distance = heuristic_refinement(env, model, min_distance)
+    return refined_distance
+```

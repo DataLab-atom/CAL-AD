@@ -1,0 +1,5 @@
+1. **Adaptive Scaling**: Use `max(1, grad_norm / sqrt(d))` for stable scaling.
+2. **Gradient Correction**: Apply corrections directly to `x_new`.
+3. **Convergence Check**: Simplify by comparing `x_new` and `x` norms.
+4. **Matrix Updates**: Efficiently update `B_bar_inv` with Sherman-Morrison.
+5. **Early Stopping**: Break early if no significant improvement.

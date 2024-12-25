@@ -1,0 +1,9 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 40, in <module>
+    x_new = search_root(objective_function,x0,A_list, b_list,max_iter=100,k=5)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_2_func_index_2_response_id_302.py", line 59, in search_root
+    B_bar_inv = sherman_morrison(B_bar_inv, V, V, U.T @ V) / omega  # Update B_bar_inv
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+TypeError: unsupported operand type(s) for /: 'NoneType' and 'float'

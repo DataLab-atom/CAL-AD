@@ -1,0 +1,9 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 40, in <module>
+    x_new = search_root(objective_function,x0,A_list, b_list,max_iter=100,k=5)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_4_func_index_1_response_id_9.py", line 72, in search_root
+    B_list[i_t] = B_new.copy()
+                  ^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'copy'

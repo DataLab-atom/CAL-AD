@@ -1,0 +1,11 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_pomo/eval.py", line 198, in <module>
+    obj = search_routine(env,model,tester_params['test_episodes'],tester_params['test_batch_size'],tester_params['aug_factor'])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\tsp_pomo\generated\iter_num_0_func_index_-1_response_id_0.py", line 31, in search_routine
+    model.to(model.device)  # Ensure model is on the correct device
+             ^^^^^^^^^^^^
+  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\torch\nn\modules\module.py", line 1729, in __getattr__
+    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+AttributeError: 'TSPModel' object has no attribute 'device'

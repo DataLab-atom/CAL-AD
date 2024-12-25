@@ -1,0 +1,25 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """
+    Select the greedy matrix U based on the largest absolute differences in diagonal elements.
+    
+    Parameters:
+    G (np.ndarray): A square matrix.
+    A (np.ndarray): A square matrix.
+    k (int): Number of top indices to select.
+    
+    Returns:
+    np.ndarray: A matrix U of size (number of rows of G, k) with selected indices set to 1.
+    """
+    # Compute the absolute differences in diagonal elements
+    diag_diff = np.abs(np.diag(G - A))
+    
+    # Efficiently find the indices of the top k largest differences
+    top_k_indices = np.argpartition(diag_diff, -k)[-k:]
+    
+    # Initialize the selection matrix U
+    U = np.zeros((G.shape[0], k))
+    
+    # Set the rows corresponding to the selected indices to 1
+    U[top_k_indices, np.arange(k)] = 1
+    
+    return U

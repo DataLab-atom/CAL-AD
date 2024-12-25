@@ -1,0 +1,36 @@
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Reinforce best solutions more heavily.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+1. **Dynamic Pheromone Update**: Adjust `alpha` and `beta` based on generation progress.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine solutions.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+4. **Variable Alpha/Beta**: Adaptively change `alpha` and `beta`.
+5. **Diversification**: Introduce random perturbations to escape local optima.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+4. **Variable Parameters**: Gradually change `alpha`, `beta`, and `evaporation_rate`.
+5. **Restart Mechanism**: Periodically reset pheromone matrix for exploration.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+4. **Variable Parameters**: Gradually change `alpha`, `beta`, and `evaporation_rate`.
+5. **Restart Mechanism**: Periodically reset pheromone matrix for exploration.
+1. **Dynamic Pheromone Update**: Adjust `alpha` and `beta` based on generation progress.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine solutions.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.
+1. **Dynamic Pheromone Update**: Adjust `Q` based on solution quality.
+2. **Elite Ants**: Increase pheromone deposit for top solutions.
+3. **Local Search**: Apply 2-opt or 3-opt to refine routes.

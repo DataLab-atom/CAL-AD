@@ -1,0 +1,20 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on combined diagonal and off-diagonal differences."""
+    # Compute the diagonal differences
+    diag_diff = np.diag(G) - np.diag(A)
+    
+    # Compute the off-diagonal differences
+    off_diag_diff = np.linalg.norm(G - A - np.diag(diag_diff), ord=2, axis=1)
+    
+    # Combine diagonal and off-diagonal differences with a weighted sum
+    # Here, we use a simple equal weighting, but this can be adjusted based on specific needs
+    combined_diff = diag_diff + off_diag_diff
+    
+    # Select the top k indices with the largest combined differences
+    indices = np.argsort(combined_diff)[::-1][:k]
+    
+    # Construct the selection matrix U
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    
+    return U

@@ -1,0 +1,41 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with enhanced exploration strategy.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    total_rewards = []
+    done = False
+
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, logits = model.forward(state)
+
+        # Implement a temperature-based strategy to encourage exploration
+        temperature = 1.0  # Initial temperature for exploration
+        action_probabilities = torch.softmax(logits / temperature, dim=-1)
+        selected = torch.multinomial(action_probabilities, num_samples=1)  # Sample action based on probabilities
+        
+        step_state, reward, done = env.step(selected)
+
+        total_rewards.append(reward)
+
+        # Decay temperature to reduce exploration over time
+        temperature *= 0.99
+
+    # Calculate the minimum distance as the negative of the best reward
+    min_distance = -max(total_rewards).item()  # Assuming rewards are negative distances
+    return min_distance
+```

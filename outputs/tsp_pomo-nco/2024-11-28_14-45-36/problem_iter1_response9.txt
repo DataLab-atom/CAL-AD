@@ -1,0 +1,35 @@
+```python
+def search_routine_v2(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Executes an enhanced POMO algorithm for the TSP with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: Size of the problem batch.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+    model.eval()
+    model.to(model.device)  # Ensure model is on the correct device
+
+    env.load_problems(batch_size, aug_factor)
+    total_reward = 0
+    min_valid_solution = float('inf')
+
+    for _ in range(int(episodes)):
+        rewards = _run_episode(env, model)
+        total_reward += rewards.mean().item()
+        torch.cuda.empty_cache()  # Clear GPU cache
+
+        # Apply heuristic to find the minimum valid solution
+        valid_solutions = env.get_valid_solutions()
+        if valid_solutions:
+            min_valid_solution = min(min_valid_solution, min(valid_solutions))
+
+    total_distance = -total_reward / episodes  # Optimization goal is negative reward
+    return min(total_distance, min_valid_solution)  # Return the better of the two
+```

@@ -1,0 +1,92 @@
+```python
+def search_routine_v2(env: Env, model: Model, episodes: float, batch_size: int = 10, aug_factor: int = 8) -> float:
+    """
+    Executes an enhanced POMO algorithm for the TSP with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: Number of episodes to run.
+        batch_size: Size of the problem batch.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The total distance of the minimum valid solution.
+    """
+    model.eval()
+    model.to(model.device)  # Ensure model is on the correct device
+
+    env.load_problems(batch_size, aug_factor)
+    total_reward = 0
+    best_solution = float('inf')
+
+    for _ in range(int(episodes)):
+        rewards = _run_episode(env, model)
+        total_reward += rewards.mean().item()
+        torch.cuda.empty_cache()  # Clear GPU cache
+
+        # Apply heuristic: 2-opt local search
+        current_solution = -rewards.mean().item()
+        improved_solution = local_search_2opt(env.problems, current_solution)
+        if improved_solution < best_solution:
+            best_solution = improved_solution
+
+    total_distance = best_solution  # Use the best solution found
+    return total_distance
+
+def local_search_2opt(problems: torch.Tensor, current_solution: float) -> float:
+    """
+    Applies a 2-opt local search heuristic to improve the current solution.
+
+    Args:
+        problems: The TSP problem instances.
+        current_solution: The current solution distance.
+
+    Returns:
+        The improved solution distance.
+    """
+    improved = True
+    best_distance = current_solution
+    while improved:
+        improved = False
+        for i in range(1, len(problems) - 1):
+            for j in range(i + 1, len(problems)):
+                new_route = swap_2opt(problems, i, j)
+                new_distance = calculate_distance(new_route)
+                if new_distance < best_distance:
+                    best_distance = new_distance
+                    improved = True
+                    problems = new_route
+    return best_distance
+
+def swap_2opt(route: torch.Tensor, i: int, j: int) -> torch.Tensor:
+    """
+    Swaps two edges in the route to improve the solution.
+
+    Args:
+        route: The current TSP route.
+        i, j: Indices for the edges to swap.
+
+    Returns:
+        The new route after the swap.
+    """
+    new_route = route.clone()
+    new_route[i:j+1] = torch.flip(route[i:j+1], [0])
+    return new_route
+
+def calculate_distance(route: torch.Tensor) -> float:
+    """
+    Calculates the total distance of the given route.
+
+    Args:
+        route: The TSP route.
+
+    Returns:
+        The total distance of the route.
+    """
+    distance = 0
+    for k in range(len(route) - 1):
+        distance += torch.norm(route[k] - route[k + 1])
+    distance += torch.norm(route[-1] - route[0])  # Return to start
+    return distance.item()
+```

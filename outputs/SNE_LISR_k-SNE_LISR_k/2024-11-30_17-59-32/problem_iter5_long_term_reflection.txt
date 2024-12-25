@@ -1,0 +1,5 @@
+1. **Hybrid Steps**: Combine Newton-like and gradient descent adaptively.
+2. **Dynamic Step Size**: Adjust based on performance and gradient norms.
+3. **Gradient Clipping**: Prevent explosion; simplify line search.
+4. **Matrix Updates**: Use Sherman-Morrison for efficiency.
+5. **Convergence Check**: Focus on position change and gradient norms.

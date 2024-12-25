@@ -1,0 +1,5 @@
+def compute_omega(t: int, n: int, r0: float, rho: float, M: float, L: float) -> float:
+    """Compute the scaling parameter omega with a new approach."""
+    if t % n == 0:
+        return (1 + M * np.sqrt(L) * r0 * (rho**(t // n)))**2 * (1 + np.sin(np.pi * t / n))
+    return 1.0

@@ -1,0 +1,45 @@
+```python
+def search_routine_v2(cal_total_distance: Callable, distance_matrix: np.ndarray, start_node: int, pop_size: int = 100, 
+                      num_iterations: int = 1000, alpha: float = 1.0, beta: float = 1.0) -> np.ndarray:
+    """
+    Search for the optimal routine using a heuristic algorithm with enhanced selection and mutation strategies.
+    
+    Parameters:
+    - cal_total_distance: The function to calculate the total distance.
+    - distance_matrix: The distance matrix for the TSP.
+    - start_node: The starting node of the routine.
+    - pop_size: Size of the population.
+    - num_iterations: Number of iterations to run the algorithm.
+    - alpha: Parameter for controlling the selection pressure.
+    - beta: Parameter for controlling the mutation rate.
+    
+    Returns:
+    - best_ind: The best routine found.
+    """
+    num_points = distance_matrix.shape[0]
+    population = initialize_population(num_points, pop_size, start_node)
+    
+    for _ in range(num_iterations):
+        fitness = evaluate_population(population, distance_matrix, cal_total_distance)
+        
+        # Enhanced selection: Stochastic Universal Sampling
+        fitness = 1 / (fitness + 1e-6)  # Invert fitness to convert to selection probability
+        fitness_sum = np.sum(fitness)
+        fitness_prob = fitness / fitness_sum
+        selected_indices = np.random.choice(pop_size, size=2, p=fitness_prob)
+        parents = (population[selected_indices[0]], population[selected_indices[1]])
+        
+        child = crossover(parents[0], parents[1])
+        
+        # Enhanced mutation: Adaptive mutation rate
+        mutation_rate = beta * (1 - _ / num_iterations)  # Decrease mutation rate over iterations
+        child = mutate(child, mutation_rate=mutation_rate)
+        
+        # Replace the worst individual in the population
+        worst_index = np.argmax(fitness)
+        population[worst_index] = child
+    
+    fitness = evaluate_population(population, distance_matrix, cal_total_distance)
+    best_ind = population[np.argmin(fitness)]
+    return best_ind
+```

@@ -1,0 +1,22 @@
+[*] Running ...
+E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_1_func_index_4_response_id_900.py:55: RuntimeWarning: invalid value encountered in scalar divide
+  omega *= np.exp(-grad_norm / (L * np.linalg.norm(x)))
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 40, in <module>
+    x_new = search_root(objective_function,x0,A_list, b_list,max_iter=100,k=5)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_1_func_index_4_response_id_900.py", line 58, in search_root
+    B_new = srk(omega * B_list[i_t], A_list[i_t], U)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\SNE_LISR_k\generated\iter_num_1_func_index_4_response_id_900.py", line 9, in srk
+    if np.linalg.matrix_rank(temp) < U.shape[1]:  # Handle singularity
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\numpy\linalg\linalg.py", line 1922, in matrix_rank
+    S = svd(A, compute_uv=False, hermitian=hermitian)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\numpy\linalg\linalg.py", line 1693, in svd
+    s = gufunc(a, signature=signature, extobj=extobj)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\numpy\linalg\linalg.py", line 121, in _raise_linalgerror_svd_nonconvergence
+    raise LinAlgError("SVD did not converge")
+numpy.linalg.LinAlgError: SVD did not converge

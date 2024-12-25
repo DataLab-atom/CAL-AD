@@ -1,0 +1,50 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with additional heuristics and optimizations.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    min_distance = float('inf')
+    current_path = []
+
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+
+        # Update the current path and calculate the distance
+        current_path.append(selected)
+        current_distance = -reward.item()
+
+        # Apply heuristics: 2-opt local search
+        improved = True
+        while improved:
+            improved = False
+            for i in range(len(current_path) - 1):
+                for j in range(i + 2, len(current_path)):
+                    new_path = current_path[:i] + current_path[i:j][::-1] + current_path[j:]
+                    new_distance = env.calculate_distance(new_path)
+                    if new_distance < current_distance:
+                        current_path = new_path
+                        current_distance = new_distance
+                        improved = True
+
+        # Update the minimum distance found
+        if current_distance < min_distance:
+            min_distance = current_distance
+
+    return min_distance
+```

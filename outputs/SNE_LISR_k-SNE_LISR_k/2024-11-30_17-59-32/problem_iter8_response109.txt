@@ -1,0 +1,16 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U based on dynamically balanced row norms and diagonal differences."""
+    diff = np.abs(np.diag(G - A))
+    row_norms = np.linalg.norm(G - A, axis=1)
+    
+    # Calculate sparsity pattern weights
+    sparsity_weights = np.sum(G == 0, axis=1) + np.sum(A == 0, axis=1)
+    sparsity_weights = sparsity_weights / np.max(sparsity_weights)
+    
+    # Dynamic balance between diagonal differences, row norms, and sparsity patterns
+    combined_scores = diff + 0.1 * row_norms + 0.05 * sparsity_weights
+    
+    indices = np.argpartition(combined_scores, -k)[-k:]
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    return U

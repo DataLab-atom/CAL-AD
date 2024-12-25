@@ -1,0 +1,44 @@
+[2024-11-28 12:50:40,293][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_pomo-nco\2024-11-28_12-50-40
+[2024-11-28 12:50:40,294][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 12:50:40,295][root][INFO] - Using LLM: deepseek-coder
+[2024-11-28 12:50:40,295][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 12:50:42,598][root][INFO] - Problem: tsp_pomo
+[2024-11-28 12:50:42,598][root][INFO] - Problem description: Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
+[2024-11-28 12:50:42,599][root][INFO] - Functions name: [_run_episode,search_routine]
+[2024-11-28 12:50:42,668][root][INFO] - Evaluating seed function...
+[2024-11-28 12:50:42,668][root][INFO] - Seed function code: 
+from numpy.linalg import inv, norm, pinv
+def _run_episode(env: Env, model: Model) -> float:
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        state, reward, done = env.step(selected)
+
+    return reward.mean().item()
+def search_routine(env: Env, model : Model, episodes: float = 100) -> float:
+    """
+    Executes the POMO search routine for the TSP.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        episodes: The number of episodes to run.
+
+    Returns:
+        The average total distance over all episodes.
+    """
+    try:
+        total_distance = 0
+        for _ in range(int(episodes)):
+            total_distance += _run_episode(env, model)
+        return total_distance / episodes
+    except Exception as e:
+        print(f"An error occurred during search: {e}")
+        return float('inf')  # Return infinity to signal failure
+[2024-11-28 12:50:42,672][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 12:51:05,262][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 12:51:05,668][root][INFO] - Iteration 0, response_id 0: Objective value: inf

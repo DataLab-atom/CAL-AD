@@ -1,0 +1,31 @@
+def greedy_matrix(G: np.ndarray, A: np.ndarray, k: int) -> np.ndarray:
+    """Select the greedy matrix U using a more sophisticated approach."""
+    # Compute the difference matrix
+    diff = G - A
+    
+    # Compute the Frobenius norm of each row in the difference matrix
+    row_norms = np.linalg.norm(diff, axis=1)
+    
+    # Compute the absolute diagonal differences
+    diag_diff = np.abs(np.diag(diff))
+    
+    # Combine row norms and diagonal differences with dynamic weights
+    # Here, we use a dynamic weight that adjusts based on the ratio of row norms to diagonal differences
+    max_row_norm = np.max(row_norms)
+    max_diag_diff = np.max(diag_diff)
+    
+    if max_row_norm == 0:
+        weight_row_norm = 0
+    else:
+        weight_row_norm = max_diag_diff / max_row_norm
+    
+    weights = weight_row_norm * row_norms + (1 - weight_row_norm) * diag_diff
+    
+    # Select the indices of the top k rows with the largest combined scores
+    indices = np.argpartition(weights, -k)[-k:]
+    
+    # Construct the selection matrix U
+    U = np.zeros((G.shape[0], k))
+    U[indices, np.arange(k)] = 1
+    
+    return U

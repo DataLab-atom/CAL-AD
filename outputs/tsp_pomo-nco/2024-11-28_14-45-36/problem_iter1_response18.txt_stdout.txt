@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "c:\Users\haibi\.vscode\extensions\ms-python.debugpy-2024.12.0-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py", line 25, in <module>
+    from _pydevd_bundle import pydevd_constants
+  File "c:\Users\haibi\.vscode\extensions\ms-python.debugpy-2024.12.0-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py", line 428, in <module>
+    from _pydev_bundle._pydev_saved_modules import thread, threading
+  File "c:\Users\haibi\.vscode\extensions\ms-python.debugpy-2024.12.0-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\_pydev_saved_modules.py", line 118, in <module>
+    import xmlrpc.client as xmlrpclib
+  File "d:\anaconda3\envs\data\envs\py3.11\Lib\xmlrpc\client.py", line 138, in <module>
+    from xml.parsers import expat
+  File "d:\anaconda3\envs\data\envs\py3.11\Lib\xml\parsers\expat.py", line 4, in <module>
+    from pyexpat import *
+ImportError: DLL load failed while importing pyexpat: 页面文件太小，无法完成操作。

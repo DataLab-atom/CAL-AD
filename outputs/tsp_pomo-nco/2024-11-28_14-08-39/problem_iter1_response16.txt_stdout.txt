@@ -1,0 +1,17 @@
+[*] Running ...
+E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\tsp_pomo\TSPEnv.py:78: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.problems = torch.load(self.test_file_path)
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_pomo/eval.py", line 197, in <module>
+    obj = search_routine(env,model,tester_params['test_episodes'],tester_params['test_batch_size'],tester_params['aug_factor'])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\tsp_pomo\generated\iter_num_1_func_index_1_response_id_46.py", line 23, in search_routine
+    total_distance += _run_episode(env, model, batch_size, aug_factor)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\tsp_pomo\generated\iter_num_1_func_index_1_response_id_46.py", line 52, in _run_episode
+    current_node = selected.item()
+                   ^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\torch\utils\_device.py", line 79, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: a Tensor with 80 elements cannot be converted to Scalar

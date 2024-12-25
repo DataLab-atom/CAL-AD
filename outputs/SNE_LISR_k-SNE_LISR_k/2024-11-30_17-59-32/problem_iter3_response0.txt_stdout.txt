@@ -1,0 +1,6 @@
+[*] Running ...
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/SNE_LISR_k/eval.py", line 30, in <module>
+    search_root = getattr(module, 'search_root')
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'iter_num_3_func_index_4_response_id_0' has no attribute 'search_root'

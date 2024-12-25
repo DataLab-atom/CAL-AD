@@ -1,0 +1,5 @@
+1. **Hybrid Steps**: Combine Newton-like and gradient descent adaptively.
+2. **Dynamic Step Size**: Adjust based on performance comparison.
+3. **Backtracking**: Ensure step size reduces objective function.
+4. **Early Termination**: Exit if `x_new` is close to `x`.
+5. **Matrix Updates**: Optimize using Sherman-Morrison formula.

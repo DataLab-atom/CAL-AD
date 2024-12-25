@@ -1,0 +1,70 @@
+```python
+def _run_episode_v2(env: Env, model: Model, batch_size: int, aug_factor: int) -> float:
+    """
+    Runs a single episode of the TSP problem with additional heuristics.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        batch_size: The batch size for processing problems.
+        aug_factor: Augmentation factor for data.
+
+    Returns:
+        The minimum travel distance found in the episode.
+    """
+    env.load_problems(batch_size, aug_factor)
+    reset_state, _, _ = env.reset()
+    model.pre_forward(reset_state)
+
+    done = False
+    total_rewards = []
+    while not done:
+        state, _, _ = env.pre_step()
+        selected, _ = model.forward(state)
+        step_state, reward, done = env.step(selected)
+        total_rewards.append(reward)
+
+    # Apply a heuristic to improve the solution
+    improved_solution = heuristic_improvement(env, model, reset_state, total_rewards)
+    return -improved_solution.min().item()  # reward is negative distance
+
+def heuristic_improvement(env: Env, model: Model, initial_state, rewards):
+    """
+    Applies a heuristic to improve the TSP solution.
+
+    Args:
+        env: The TSP environment.
+        model: The pre-trained TSP model.
+        initial_state: The initial state of the environment.
+        rewards: List of rewards collected during the episode.
+
+    Returns:
+        Improved rewards after applying the heuristic.
+    """
+    # Example heuristic: 2-opt swap
+    improved_rewards = rewards.clone()
+    for i in range(len(rewards)):
+        for j in range(i + 2, len(rewards)):
+            # Swap nodes i and j
+            new_state = swap_nodes(initial_state, i, j)
+            new_selected, _ = model.forward(new_state)
+            new_step_state, new_reward, _ = env.step(new_selected)
+            if new_reward < improved_rewards[i]:
+                improved_rewards[i] = new_reward
+    return improved_rewards
+
+def swap_nodes(state, i, j):
+    """
+    Swaps two nodes in the state representation.
+
+    Args:
+        state: The current state of the environment.
+        i: Index of the first node.
+        j: Index of the second node.
+
+    Returns:
+        New state with swapped nodes.
+    """
+    state[i], state[j] = state[j], state[i]
+    return state
+```

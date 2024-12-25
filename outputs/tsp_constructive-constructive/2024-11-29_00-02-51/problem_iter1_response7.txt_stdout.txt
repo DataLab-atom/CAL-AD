@@ -1,0 +1,13 @@
+[*] Running ...
+[*] Dataset loaded: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive\dataset\train50_dataset.npy with 5 instances.
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-[*] Instance 2: 6.3387297020389335
+[*] Instance 3: 6.21972735842686[[*] Instance 4: 5.843039412508348
+[*] Average:
+5.903794694535362
+0,100)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\problems\tsp_constructive\generated\iter_num_1_func_index_4_response_id_47.py", line 54, in search_routine
+    tours[i] = mutate_tour(tours[i])
+               ^^^^^^^^^^^
+NameError: name 'mutate_tour' is not defined

@@ -1,0 +1,5 @@
+1. **Elitism**: Retain top solutions to guide search.
+2. **Adaptive Mutation**: Vary mutation based on solution quality.
+3. **Diverse Crossover**: Mix crossover methods for varied offspring.
+4. **Dynamic Population**: Adjust size for balance between exploration and exploitation.
+5. **Local Search**: Enhance elite solutions with local optimizations.

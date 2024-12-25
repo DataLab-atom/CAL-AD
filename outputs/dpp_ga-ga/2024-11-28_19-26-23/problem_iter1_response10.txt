@@ -1,0 +1,35 @@
+```python
+def mutate_v2(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by introducing more sophisticated changes to its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    mutation_intensity = 0.05  # Additional parameter to control the intensity of mutation
+
+    # Mutate pi array
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            # Introduce a small random change with mutation_intensity
+            pi[i] = (pi[i] + int(mutation_intensity * total_ports * (random.random() - 0.5))) % total_ports
+    
+    # Mutate probe
+    if random.random() < mutation_rate:
+        # Introduce a small random change with mutation_intensity
+        probe = (probe + int(mutation_intensity * total_ports * (random.random() - 0.5))) % total_ports
+    
+    # Ensure uniqueness of pi array elements after mutation
+    pi = np.unique(pi)
+    if len(pi) < len(individual[0]):
+        # If uniqueness causes reduction in length, refill with random unique values
+        pi = np.append(pi, np.random.choice(total_ports, len(individual[0]) - len(pi), replace=False))
+    
+    return (pi, probe)
+```

@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive/eval.py", line 11, in <module>
+    from gpt import select_next_node_v2 as select_next_node
+ModuleNotFoundError: No module named 'gpt'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive/eval.py", line 13, in <module>
+    from gpt import select_next_node
+ModuleNotFoundError: No module named 'gpt'
