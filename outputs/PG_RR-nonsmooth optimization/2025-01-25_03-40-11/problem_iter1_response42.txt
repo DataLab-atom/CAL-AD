@@ -1,0 +1,16 @@
+```python
+def soft_thresholding_v2(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector with an adaptive thresholding mechanism.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    # Adaptive thresholding: reduce threshold for larger values to preserve more information
+    adaptive_threshold = threshold * np.exp(-np.abs(x) / np.max(np.abs(x) + 1e-10))
+    return np.sign(x) * np.maximum(np.abs(x) - adaptive_threshold, 0)
+```

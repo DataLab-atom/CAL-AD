@@ -9,6 +9,40 @@ from utils.utils import *
 from utils.llm_client.base import BaseClient
 import copy
 from itertools import combinations
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
+from collections import namedtuple
+
+def static_run_code(individual: dict, response_id, iteration, output_dir, root_dir, problem, problem_size, problem_type, timeout):
+    """
+    Write code into a file and run eval script.
+    """
+    logging.info(f"Iteration {iteration}: Running Code {response_id}")
+    #logging.debug(f"Iteration {iteration}: Processing Code Run {response_id}")
+    output_index = f'_{individual["func_index"]}'
+    outfile_path = f'iter_num_{iteration}_func_index{output_index}_response_id_{response_id}.py'
+    with open(output_dir+'generated/'+outfile_path, 'w') as file:
+        file.write(individual["code"])
+
+    # Execute the python file with flags
+    with open(individual["stdout_filepath"], 'w') as f:
+        eval_file_path = f'{root_dir}/problems/{problem}/eval.py' if problem_type != "black_box" else f'{root_dir}/problems/{problem}/eval_black_box.py' 
+        # print(['python', '-u', eval_file_path, f'{self.problem_size}', self.root_dir, "train",outfile_path])
+        process = subprocess.Popen(['python', '-u', eval_file_path, f'{problem_size}', root_dir, "train",outfile_path],
+                                    stdout=f, stderr=f)
+
+    block_until_running(individual["stdout_filepath"], log_status=True, iter_num=iteration, response_id=response_id)
+    
+    try:
+        process.communicate(timeout=timeout)  # 等待子进程完成
+    except subprocess.TimeoutExpired:
+        # 如果超时，则杀死子进程
+        process.kill()
+        raise
+    except Exception as e: # If code execution fails
+        raise
+    return process.returncode,response_id
+
 
 class ReEv2d:
     def __init__(
@@ -66,7 +100,7 @@ class ReEv2d:
 
 
         # ----------------------------------------------------------------------------------------------------------------------
-        self.init_generated_funcs = np.load(f'{self.output_dir}/init_generated_funcs.npy',allow_pickle=True)
+        self.init_generated_funcs = np.load(f'{self.output_dir}init_generated_funcs.npy',allow_pickle=True)
         self.func_names = [i['func_name'] for i in self.init_generated_funcs]
 
         self.func_signatures = []
@@ -117,7 +151,7 @@ class ReEv2d:
                 func_name=func_name, 
                 problem_desc=self.problem_desc,
                 func_desc=func_desc,
-                doc= doc
+                doc = doc
             ))
             self.seed_prompts.append(file_to_string(f'{self.prompt_dir}/common/seed.txt').format(
                 seed_func=seed_func,
@@ -157,7 +191,9 @@ class ReEv2d:
             "response_id": 0,
         }
         self.seed_ind = seed_ind
-        self.population = self.evaluate_population([seed_ind])*len(self.func_names)
+        temp = self.evaluate_population([seed_ind])[0]
+        self.population =  [copy.deepcopy(temp) for _ in range(len(self.func_names))] # self.evaluate_population([seed_ind])*len(self.func_names)
+
         for i,_ in enumerate(self.func_names):
             self.population[i]['func_index'] = i
 
@@ -171,6 +207,8 @@ class ReEv2d:
         system = self.system_generator_prompt
         population = []
         for index,(user_generator_prompt,seed_prompt) in enumerate(zip(self.user_generator_prompts,self.seed_prompts)):
+            if index>1:
+                print('ccc')
             if self.cfg.algorithm != 'reevo2d':
                 if not index in self.reevo_func_index:
                     continue
@@ -233,7 +271,7 @@ class ReEv2d:
         std_out_filepath = f"problem_iter{self.iteration}_stdout{response_id}.txt" if file_name is None else file_name + "_stdout.txt"
         
         temp_funcs = copy.deepcopy(funcs)
-        temp_funcs[func_index] = extract_code_from_generator_onece(response).replace('_v2','').replace('_v1','')
+        temp_funcs[func_index] = response.replace(f'{self.func_names[func_index]}_v2',self.func_names[func_index]).replace(f'{self.func_names[func_index]}_v1',self.func_names[func_index])
         code = extract_code_from_generators(temp_funcs)
         
         individual = {
@@ -260,63 +298,76 @@ class ReEv2d:
         """
         Evaluate population by running code in parallel and computing objective values.
         """
-        inner_runs = []
-        # Run code to evaluate
-        for response_id in range(len(population)):
-            self.function_evals += 1
-            # Skip if response is invalid
-            if population[response_id]["code"] is None:
-                population[response_id] = self.mark_invalid_individual(population[response_id], "Invalid response!")
-                inner_runs.append(None)
-                continue
-            
-            logging.info(f"Iteration {self.iteration}: Running Code {response_id}")
-            
-            try:
-                process = self._run_code(population[response_id], response_id)
-                inner_runs.append(process)
-            except Exception as e: # If code execution fails
-                logging.info(f"Error for response_id {response_id}: {e}")
-                population[response_id] = self.mark_invalid_individual(population[response_id], str(e))
-                inner_runs.append(None)
-        
-        # Update population with objective values
-        for response_id, inner_run in enumerate(inner_runs):
-            if inner_run is None: # If code execution fails, skip
-                continue
-            try:
-                inner_run.communicate(timeout=self.cfg.timeout) # Wait for code execution to finish
-            except subprocess.TimeoutExpired as e:
-                logging.info(f"Error for response_id {response_id}: {e}")
-                population[response_id] = self.mark_invalid_individual(population[response_id], str(e))
-                inner_run.kill()
-                continue
+        def mark_invalid_individual(individual: dict, traceback_msg: str) -> dict:
+            """
+            Mark an individual as invalid.
+            """
+            individual["exec_success"] = False
+            individual["obj"] = float("inf")
+            individual["traceback_msg"] = traceback_msg
+            return individual
 
-            individual = population[response_id]
-            stdout_filepath = individual["stdout_filepath"]
-            with open(stdout_filepath, 'r') as f:  # read the stdout file
-                stdout_str = f.read() 
-            traceback_msg = filter_traceback(stdout_str)
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            futures={}
+            for response_id in range(len(population)):
+                self.function_evals += 1
+                # Skip if response is invalid
+                if population[response_id]["code"] is None:
+                    population[response_id] = mark_invalid_individual(population[response_id], "Invalid response!")
+                    continue
+                futures[response_id]=executor.submit(static_run_code, population[response_id], response_id, self.iteration, self.output_dir, self.root_dir, self.problem, self.problem_size, self.problem_type, self.cfg.timeout)
             
-            individual = population[response_id]
-            # Store objective value for each individual
-            if traceback_msg == '': # If execution has no error
+
+            # 创建一个命名元组来保存 Future 和 response_id
+            FutureWithId = namedtuple('FutureWithId', ['future', 'response_id'])
+
+            # 提交任务时创建 FutureWithId 实例并添加到列表中
+            futures_with_ids = [
+                FutureWithId(future=futures[response_id], response_id=response_id)
+                for response_id in futures
+            ]
+
+            # 使用 as_completed 处理这些 FutureWithId 实例
+            for fut_with_id in as_completed([fwi.future for fwi in futures_with_ids]):
+                response_id = next(fwi.response_id for fwi in futures_with_ids if fwi.future == fut_with_id)
                 try:
-                    individual["obj"] = float(stdout_str.split('\n')[-2]) if self.obj_type == "min" else -float(stdout_str.split('\n')[-2])
-                    individual["exec_success"] = True
-                except:
-                    population[response_id] = self.mark_invalid_individual(population[response_id], "Invalid std out / objective value!")
-            else: # Otherwise, also provide execution traceback error feedback
-                population[response_id] = self.mark_invalid_individual(population[response_id], traceback_msg)
+                    exit_code = fut_with_id.result()
 
-            if np.isinf(individual["obj"]) and np.random.rand() < 0.8:
-                individual["exec_success"] = False
+                except subprocess.TimeoutExpired as e:
+                    logging.info(f"Timeout error for response_id {response_id}: {e}")
+                    population[response_id] = mark_invalid_individual(population[response_id], str(e))
+                
+                except Exception as e: # 如果代码执行失败
+                    logging.info(f"Error for response_id {response_id}: {e}")
+                    population[response_id] = mark_invalid_individual(population[response_id], str(e))
 
-            if np.isnan(individual["obj"]):
-                individual["obj"] = np.inf
-                individual["exec_success"] = False
-            
-            logging.info(f"Iteration {self.iteration}, response_id {response_id}: Objective value: {individual['obj']}")
+                individual = population[response_id]
+                stdout_filepath = individual["stdout_filepath"]
+
+                with open(stdout_filepath, 'r') as f:  # read the stdout file
+                    stdout_str = f.read() 
+                traceback_msg = filter_traceback(stdout_str)
+                
+                individual = population[response_id]
+                # Store objective value for each individual
+                if traceback_msg == '': # If execution has no error
+                    try:
+                        individual["obj"] = float(stdout_str.split('\n')[-2]) if self.obj_type == "min" else -float(stdout_str.split('\n')[-2])
+                        individual["exec_success"] = True
+                    except:
+                        population[response_id] = mark_invalid_individual(population[response_id], "Invalid std out / objective value!")
+                else: # Otherwise, also provide execution traceback error feedback
+                    population[response_id] = mark_invalid_individual(population[response_id], traceback_msg)
+
+                if np.isinf(individual["obj"]) and np.random.rand() < 0.8:
+                    individual["exec_success"] = False
+
+                if np.isnan(individual["obj"]):
+                    individual["obj"] = np.inf
+                    individual["exec_success"] = False
+                
+                logging.info(f"Iteration {self.iteration}, response_id {response_id}: Objective value: {individual['obj']}")
+
         return population
 
 
@@ -358,6 +409,7 @@ class ReEv2d:
                                         stdout=f, stderr=f)
 
         block_until_running(individual["stdout_filepath"], log_status=True, iter_num=self.iteration, response_id=response_id)
+
         return process
     
     # ------------------------------------------------------------------------------------------------------------------------

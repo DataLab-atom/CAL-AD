@@ -1,0 +1,8 @@
+problem_name: dimon
+problem_type: PDE
+obj_type: min
+problem_size: 0 # problem size for training
+func_name: dimon
+description: Based on the designated name and associated materials, please create an independent function that will be utilized to form a model, ensuring that the trained model's loss on the validation set is minimized.
+
+

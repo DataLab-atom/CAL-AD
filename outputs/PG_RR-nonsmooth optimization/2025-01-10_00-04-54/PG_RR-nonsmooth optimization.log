@@ -1,0 +1,1081 @@
+[2025-01-10 00:04:54,537][root][INFO] - Workspace: /root/AEL-P-SNE/outputs/PG_RR-nonsmooth optimization/2025-01-10_00-04-54
+[2025-01-10 00:04:54,538][root][INFO] - Project Root: /root/AEL-P-SNE
+[2025-01-10 00:04:54,538][root][INFO] - Using LLM: deepseek-coder
+[2025-01-10 00:04:54,538][root][INFO] - Using Algorithm: reevo2d
+[2025-01-10 00:04:55,851][root][INFO] - Problem: PG_RR
+[2025-01-10 00:04:55,852][root][INFO] - Problem description: Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
+[2025-01-10 00:04:55,853][root][INFO] - Functions name: [soft_thresholding,compute_gradient,PG_RR]
+[2025-01-10 00:04:55,854][root][INFO] - Evaluating seed function...
+[2025-01-10 00:04:55,855][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+import random
+from typing import List
+from typing import Tuple
+import numpy as np
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+[2025-01-10 00:04:55,855][root][INFO] - Iteration 0: Running Code 0
+[2025-01-10 00:04:56,038][root][INFO] - Iteration 0: Code Run 0 successful!
+[2025-01-10 00:05:20,496][root][INFO] - Iteration 0, response_id 0: Objective value: 0.00778998998637781
+[2025-01-10 00:05:20,498][root][INFO] - Iteration 0: Elitist: 0.00778998998637781
+[2025-01-10 00:05:20,498][root][INFO] - Iteration 0 finished...
+[2025-01-10 00:05:20,499][root][INFO] - Best obj: 0.00778998998637781,Best obj func index: 0, Best Code Path: problem_iter0_code0.py
+[2025-01-10 00:05:20,499][root][INFO] - Function Evals: 1
+[2025-01-10 00:05:20,500][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `soft_thresholding` has been selected from this document.
+Write a new `soft_thresholding` for problem:
+Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
+
+Function description:
+The `soft_thresholding` function is designed to apply soft thresholding to an input vector, which is crucial in scenarios involving L1 regularization, such as in the context of optimization algorithms. It takes two inputs: `x`, a NumPy ndarray representing the input vector, and `threshold`, a floating-point value that specifies the threshold to be applied. The function returns a NumPy ndarray, which is the thresholded vector, obtained by reducing the absolute values of the elements of `x` by the specified threshold and setting negative values to zero, effectively shrinking small values towards zero while preserving the signs of the larger values. This operation helps to enforce sparsity in solutions, making it particularly valuable in regression problems where L1 regularization is employed.
+
+markdown document:
+Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.
+
+```python
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `soft_thresholding_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2025-01-10 00:05:25,283][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,481][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,553][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,589][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,816][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,914][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:25,918][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,160][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,309][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,317][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,443][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,516][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,547][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,566][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,879][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,904][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,934][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:26,946][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,012][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,031][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,105][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,114][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,177][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,362][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,372][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,469][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,553][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,569][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:27,756][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:28,080][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:30,724][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:30,744][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:30,771][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,071][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,277][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,349][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,418][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,568][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,610][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,639][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,712][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:31,805][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,051][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,159][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,208][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,234][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,322][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,325][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,337][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,404][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:32,444][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `compute_gradient` has been selected from this document.
+Write a new `compute_gradient` for problem:
+Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
+
+Function description:
+The `compute_gradient` function is designed to compute the gradient of the smooth part of an objective function used in optimization problems. It takes three inputs: `x`, which is a numpy array representing the solution vector; `A`, a list of numpy arrays that are linear transformation matrices; and `y`, a list of observation vectors, which represents the target values. The function calculates the gradient by iterating over the matrices and observation vectors, applying the formula for the gradient of the least squares loss, and averaging the contribution from all observations. The output is a numpy array representing the gradient vector, which can be used for optimization algorithms like Proximal Gradient methods to iteratively update the solution vector `x`.
+
+markdown document:
+Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.
+
+```python
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `compute_gradient_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2025-01-10 00:05:39,156][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:39,511][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:39,677][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:39,685][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:39,739][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,153][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,537][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,646][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,856][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,882][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:40,915][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,014][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,072][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,099][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,321][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,343][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,572][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,579][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,690][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:41,924][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,035][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,092][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,128][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,141][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,150][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,269][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,447][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,457][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,527][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,628][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,816][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:42,826][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:45,900][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:46,006][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:47,598][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:47,973][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:47,998][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:48,448][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:48,725][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,077][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,112][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,121][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,203][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,282][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,317][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,341][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,742][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:49,883][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:50,283][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:50,447][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:50,491][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `PG_RR` has been selected from this document.
+Write a new `PG_RR` for problem:
+Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
+
+Function description:
+The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) optimization algorithm, designed to minimize a composite objective function that includes a smooth term and an L1 regularization term. Its inputs consist of a list of linear transformation matrices `A`, a list of observation vectors `y`, a regularization intensity `lambda_`, a learning rate `gamma`, the number of training epochs `num_epochs`, and an initial solution vector `initial_x`. The function outputs a tuple containing the optimal solution vector after iteratively updating it through gradient descent and soft thresholding. The purpose of this function is to find a solution that balances the fidelity to the observations with a penalty for complexity (sparsity) in the solution, making it useful in various machine learning and statistical modeling applications.
+
+markdown document:
+Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.Below is the implementation of the `PG_RR` algorithm, adhering to the provided optimization goal and coding rules. The code includes comprehensive error handling, efficient performance, and clear documentation. Additionally, it includes type annotations and a test block for verification.
+
+```python
+import numpy as np
+from typing import List, Tuple
+
+def objective_function(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray], lambda_: float) -> float:
+    """
+    Compute the combined objective function consisting of a smooth term and a non-smooth term.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+
+    Returns:
+        float: The value of the objective function.
+    """
+    smooth_part = sum(np.linalg.norm(A[i] @ x - y[i]) ** 2 for i in range(len(y))) / len(y)
+    nonsmooth_part = lambda_ * np.linalg.norm(x, ord=1)
+    return smooth_part + nonsmooth_part
+
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+if __name__ == "__main__":
+    # Test code
+    np.random.seed(42)
+    
+    # Generate synthetic data
+    n_samples = 10
+    n_features = 784
+    A = [np.random.randn(100, n_features) for _ in range(n_samples)]
+    y = [np.random.randn(100) for _ in range(n_samples)]
+    lambda_ = 0.1
+    gamma = 0.01
+    num_epochs = 100
+    initial_x = np.random.randn(n_features)
+    
+    # Run PG_RR algorithm
+    optimal_x = PG_RR(A, y, lambda_, gamma, num_epochs, initial_x)
+    
+    # Compute objective function value
+    obj_value = objective_function(optimal_x, A, y, lambda_)
+    
+    print(f"Optimal solution: {optimal_x}")
+    print(f"Objective function value: {obj_value}")
+```
+
+### Explanation:
+1. **Objective Function**: The `objective_function` computes the combined objective function, which includes the smooth term (average squared Euclidean distance) and the non-smooth term (L1 regularization).
+
+2. **Soft Thresholding**: The `soft_thresholding` function applies the soft thresholding operation, which is crucial for handling the L1 regularization term.
+
+3. **Gradient Computation**: The `compute_gradient` function calculates the gradient of the smooth part of the objective function.
+
+4. **PG_RR Algorithm**: The `PG_RR` function implements the Proximal Gradient with Random Reshuffling (PG-RR) algorithm. It iteratively updates the solution vector `x` using the gradient of the smooth part and applies soft thresholding to handle the L1 regularization.
+
+5. **Test Block**: The test block generates synthetic data, runs the `PG_RR` algorithm, and prints the optimal solution and the objective function value.
+
+This implementation ensures that the code is efficient, well-documented, and adheres to the specified optimization goal.
+
+```python
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `PG_RR_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2025-01-10 00:05:58,598][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:58,642][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:58,999][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:59,322][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:59,427][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:59,847][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:05:59,980][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:00,206][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:00,305][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:00,352][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:00,520][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,107][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,180][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,495][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,644][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,659][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,754][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,763][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,787][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,797][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,832][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,847][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,894][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,954][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:01,998][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,049][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,125][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,179][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,190][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,509][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:02,636][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:03,632][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:06,860][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,042][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,546][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,575][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,600][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,780][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:08,970][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:09,407][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:09,444][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:10,238][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:10,525][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:10,534][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:10,545][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:10,971][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:11,126][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:11,331][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:14,294][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:14,510][httpx][INFO] - HTTP Request: POST https://api.agicto.cn/v1/chat/completions "HTTP/1.1 200 OK"
+[2025-01-10 00:06:14,553][root][INFO] - Iteration 1: Running Code 0
+[2025-01-10 00:06:14,747][root][INFO] - Iteration 1: Code Run 0 successful!
+[2025-01-10 00:06:14,748][root][INFO] - Iteration 1: Running Code 1
+[2025-01-10 00:06:14,943][root][INFO] - Iteration 1: Code Run 1 successful!
+[2025-01-10 00:06:14,943][root][INFO] - Iteration 1: Running Code 2
+[2025-01-10 00:06:15,140][root][INFO] - Iteration 1: Code Run 2 successful!
+[2025-01-10 00:06:15,140][root][INFO] - Iteration 1: Running Code 3
+[2025-01-10 00:06:15,337][root][INFO] - Iteration 1: Code Run 3 successful!
+[2025-01-10 00:06:15,337][root][INFO] - Iteration 1: Running Code 4
+[2025-01-10 00:06:15,533][root][INFO] - Iteration 1: Code Run 4 successful!
+[2025-01-10 00:06:15,533][root][INFO] - Iteration 1: Running Code 5
+[2025-01-10 00:06:15,745][root][INFO] - Iteration 1: Code Run 5 successful!
+[2025-01-10 00:06:15,746][root][INFO] - Iteration 1: Running Code 6
+[2025-01-10 00:06:15,942][root][INFO] - Iteration 1: Code Run 6 successful!
+[2025-01-10 00:06:15,942][root][INFO] - Iteration 1: Running Code 7
+[2025-01-10 00:06:16,139][root][INFO] - Iteration 1: Code Run 7 successful!
+[2025-01-10 00:06:16,139][root][INFO] - Iteration 1: Running Code 8
+[2025-01-10 00:06:16,335][root][INFO] - Iteration 1: Code Run 8 successful!
+[2025-01-10 00:06:16,335][root][INFO] - Iteration 1: Running Code 9
+[2025-01-10 00:06:16,537][root][INFO] - Iteration 1: Code Run 9 successful!
+[2025-01-10 00:06:16,537][root][INFO] - Iteration 1: Running Code 10
+[2025-01-10 00:06:16,722][root][INFO] - Iteration 1: Code Run 10 successful!
+[2025-01-10 00:06:16,722][root][INFO] - Iteration 1: Running Code 11
+[2025-01-10 00:06:16,918][root][INFO] - Iteration 1: Code Run 11 successful!
+[2025-01-10 00:06:16,918][root][INFO] - Iteration 1: Running Code 12
+[2025-01-10 00:06:17,112][root][INFO] - Iteration 1: Code Run 12 successful!
+[2025-01-10 00:06:17,113][root][INFO] - Iteration 1: Running Code 13
+[2025-01-10 00:06:17,309][root][INFO] - Iteration 1: Code Run 13 successful!
+[2025-01-10 00:06:17,309][root][INFO] - Iteration 1: Running Code 14
+[2025-01-10 00:06:17,500][root][INFO] - Iteration 1: Code Run 14 successful!
+[2025-01-10 00:06:17,500][root][INFO] - Iteration 1: Running Code 15
+[2025-01-10 00:06:17,697][root][INFO] - Iteration 1: Code Run 15 successful!
+[2025-01-10 00:06:17,697][root][INFO] - Iteration 1: Running Code 16
+[2025-01-10 00:06:17,891][root][INFO] - Iteration 1: Code Run 16 successful!
+[2025-01-10 00:06:17,892][root][INFO] - Iteration 1: Running Code 17
+[2025-01-10 00:06:18,089][root][INFO] - Iteration 1: Code Run 17 successful!
+[2025-01-10 00:06:18,090][root][INFO] - Iteration 1: Running Code 18
+[2025-01-10 00:06:18,272][root][INFO] - Iteration 1: Code Run 18 successful!
+[2025-01-10 00:06:18,273][root][INFO] - Iteration 1: Running Code 19
+[2025-01-10 00:06:18,517][root][INFO] - Iteration 1: Code Run 19 successful!
+[2025-01-10 00:06:18,517][root][INFO] - Iteration 1: Running Code 20
+[2025-01-10 00:06:18,711][root][INFO] - Iteration 1: Code Run 20 successful!
+[2025-01-10 00:06:18,711][root][INFO] - Iteration 1: Running Code 21
+[2025-01-10 00:06:18,924][root][INFO] - Iteration 1: Code Run 21 successful!
+[2025-01-10 00:06:18,925][root][INFO] - Iteration 1: Running Code 22
+[2025-01-10 00:06:19,228][root][INFO] - Iteration 1: Code Run 22 successful!
+[2025-01-10 00:06:19,229][root][INFO] - Iteration 1: Running Code 23
+[2025-01-10 00:06:19,629][root][INFO] - Iteration 1: Code Run 23 successful!
+[2025-01-10 00:06:19,630][root][INFO] - Iteration 1: Running Code 24
+[2025-01-10 00:06:20,003][root][INFO] - Iteration 1: Code Run 24 successful!
+[2025-01-10 00:06:20,004][root][INFO] - Iteration 1: Running Code 25

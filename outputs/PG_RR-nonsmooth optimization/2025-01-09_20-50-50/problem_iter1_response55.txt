@@ -1,0 +1,36 @@
+```python
+import numpy as np
+from typing import List, Tuple
+
+def PG_RR_v2(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the enhanced version of the Proximal Gradient with Random Reshuffling (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    # Adaptive learning rate
+    gamma_initial = gamma
+    gamma_decay = 0.99
+    
+    for epoch in range(num_epochs):
+        gamma = gamma_initial * (gamma_decay ** epoch)  # Decay learning rate
+        indices = np.random.permutation(n)
+        
+        for i in indices:
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+```

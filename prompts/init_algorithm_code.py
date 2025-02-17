@@ -1,80 +1,3 @@
-GENERATE_DESC_PROMPT_ZH = """你是一个专家级别的算法工程师请你用一段话描述一下优化目标
-
-优化目标：
-获取最优的路径使得总距离最小
-
-优化目标的相关代码:
-```
-{code}
-```
-
-请直接返回你编写的描述内容"""
-
-GENERATE_GA_PROMPT_ZH="""你是一个专家级别的算法工程师，请你使用{algorithm_name}编写一个名为search_routine的python函数达到优化目标
-search_routine函数模板:
-def search_routine(cal_total_distance,distance_matrix:np.ndarray, pop_size:int=100, num_generations:int=1000, mutation_rate:float=0.01,alpha:float=1.0, beta:float=5.0, evaporation_rate:float=0.5, Q:float=100.0) -> np.ndarray:
-    '''
-    '''
-    return best_ind
-
-优化目标：
-{description}
-
-优化目标的相关代码:
-```
-{code}
-```
-
-如果需要定义额外的帮助函数,请确保它们在`search_routine`函数之外定义,并正确地被调用。
-如果有测试代码请放在下方代码块中:
-```
-if __name__ == "__main__":
-```
-请为所有函数的输入和输出添加类型注解。
-请直接返回你编写的所有代码。"""
-
-GENERATE_ALG_PROMPT_ZH="""你是一个专家级别的算法工程师，请你参考给定资料使用python编写算法{algorithm_name}的实现，并以一个名为search_root的函数作为入口达到优化目标
-
-search_root的函数模板
-{func_template}
-
-如果你需要修改此模板以增加新的输入,请为它设置好默认值,并放置到参数列表的最后方。
-
-参考资料:
-{docs}
-
-优化目标：
-{description}
-
-优化目标的相关代码:
-```
-{code}
-```
-
-针对数值计算场景,应该保证计算的精度。
-应该避免在一个函数体中编写过多代码,需要多定义工具函数。
-确保所有函数的函数体都独立的在`search_root`函数体之外,且正确地被调用。
-如果有测试代码请放在下方代码块中:
-```
-if __name__ == "__main__":
-```
-请为所有函数的输入和输出添加类型注解。
-请直接返回你编写的所有代码。"""
-
-
-FUNC_DESC_PROMPT_ZH = """你是一个专家级别的算法工程师,现有一份markdown文档,其中包含了python代码与相关说明,现从中选取了一个目标函数`{func_name}`请你用一段话描述这个函数的输入输出以及作用
-
-目标函数代码：
-{func_source}
-
-markdown文档:
-```
-{doc}
-```
-
-请直接返回你编写的描述内容"""
-
-#-------------------------------------------------------------------------------------------------------------------------------------------------------
 GENERATE_DESC_PROMPT_EN = """You are an expert-level algorithm engineer; please describe the optimization objective in one paragraph.
 
 Optimization Objective:
@@ -196,6 +119,6 @@ if __name__ == "__main__":
 
 
 BASE_URL='https://api.agicto.cn/v1'
-API_KEY='sk-d4nQkPsuNRkzHZ8vt8ag4Npu1sIOdRwdtV5OhOuUT4GUJh5L'
+API_KEY=''
 LLM_MODEL='gpt-4o-mini'
 LLM_CODE_MODEL='gemini-1.5-pro'

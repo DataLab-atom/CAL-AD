@@ -1,0 +1,32 @@
+```python
+import numpy as np
+from typing import List, Tuple
+
+def PG_RR_v2(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray, momentum: float = 0.9) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm with momentum.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+        momentum (float): Momentum coefficient (default: 0.9).
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    velocity = np.zeros_like(x)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            velocity = momentum * velocity + gamma * gradient
+            x = soft_thresholding(x - velocity, gamma * lambda_)
+    
+    return x
+```

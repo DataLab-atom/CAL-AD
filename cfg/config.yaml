@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - problem: logistic_LISR_k
+  - problem: PG_RR  # Evolutionary problem
   - llm_client: openai
   - override hydra/output: local
 

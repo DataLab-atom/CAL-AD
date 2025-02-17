@@ -1,0 +1,23 @@
+```python
+def soft_thresholding_v2(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector with an adaptive thresholding approach.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    # Apply adaptive thresholding based on the magnitude of the elements
+    thresholded = np.zeros_like(x)
+    for i in range(len(x)):
+        if x[i] > threshold:
+            thresholded[i] = x[i] - threshold
+        elif x[i] < -threshold:
+            thresholded[i] = x[i] + threshold
+        else:
+            thresholded[i] = 0
+    return thresholded
+```

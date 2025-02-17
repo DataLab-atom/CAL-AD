@@ -1,0 +1,20 @@
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function using matrix operations for efficiency.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    # Stack all A_i matrices and y_i vectors into a single matrix and vector
+    A_stacked = np.vstack(A)
+    y_stacked = np.hstack(y)
+    
+    # Compute the gradient using matrix operations
+    gradient = 2 * A_stacked.T @ (A_stacked @ x - y_stacked) / n
+    return gradient

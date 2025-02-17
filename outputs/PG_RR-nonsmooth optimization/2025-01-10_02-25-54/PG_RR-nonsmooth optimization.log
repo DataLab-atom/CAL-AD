@@ -1,0 +1,69 @@
+[2025-01-10 02:25:54,536][root][INFO] - Workspace: /root/AEL-P-SNE/outputs/PG_RR-nonsmooth optimization/2025-01-10_02-25-54
+[2025-01-10 02:25:54,536][root][INFO] - Project Root: /root/AEL-P-SNE
+[2025-01-10 02:25:54,537][root][INFO] - Using LLM: deepseek-coder
+[2025-01-10 02:25:54,537][root][INFO] - Using Algorithm: reevo2d
+[2025-01-10 02:25:55,531][root][INFO] - Problem: PG_RR
+[2025-01-10 02:25:55,531][root][INFO] - Problem description: Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
+[2025-01-10 02:25:55,532][root][INFO] - Functions name: [soft_thresholding,compute_gradient,PG_RR]
+[2025-01-10 02:25:55,532][root][INFO] - Evaluating seed function...
+[2025-01-10 02:25:55,533][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+import random
+from typing import List
+from typing import Tuple
+import numpy as np
+def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Apply soft thresholding to the input vector.
+
+    Parameters:
+        x (np.ndarray): The input vector.
+        threshold (float): The threshold value.
+
+    Returns:
+        np.ndarray: The thresholded vector.
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+def compute_gradient(x: np.ndarray, A: List[np.ndarray], y: List[np.ndarray]) -> np.ndarray:
+    """
+    Compute the gradient of the smooth part of the objective function.
+
+    Parameters:
+        x (np.ndarray): The solution vector.
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+
+    Returns:
+        np.ndarray: The gradient vector.
+    """
+    n = len(y)
+    gradient = np.zeros_like(x)
+    for i in range(n):
+        gradient += 2 * A[i].T @ (A[i] @ x - y[i])
+    return gradient / n
+def PG_RR(A: List[np.ndarray], y: List[np.ndarray], lambda_: float, gamma: float, num_epochs: int, initial_x: np.ndarray) -> Tuple[np.ndarray]:
+    """
+    Run the entry function of the (PG-RR) algorithm.
+
+    Parameters:
+        A (List[np.ndarray]): A list of linear transformation matrices.
+        y (List[np.ndarray]): A list of observation vectors.
+        lambda_ (float): L1 regularization intensity.
+        gamma (float): Learning rate (step size).
+        num_epochs (int): Number of training cycles.
+        initial_x (np.ndarray): Initial solution vector.
+
+    Returns:
+        Tuple[np.ndarray]: The last output containing the optimal solution vector.
+    """
+    x = initial_x.copy()
+    n = len(y)
+    
+    for epoch in range(num_epochs):
+        for i in np.random.permutation(n):
+            gradient = 2 * A[i].T @ (A[i] @ x - y[i])
+            x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
+    
+    return x
+[2025-01-10 02:25:56,217][root][INFO] - Iteration 0: Running Code 0
+[2025-01-10 02:25:56,421][root][INFO] - Iteration 0: Code Run 0 successful!

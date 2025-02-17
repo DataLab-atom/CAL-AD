@@ -1,0 +1,6 @@
+c:\Users\86151\.vscode\extensions\ms-python.debugpy-2024.14.0-win32-x64\bundled\libs\debugpy/..\debugpy\_vendored\force_pydevd.py:18: UserWarning: incompatible copy of pydevd already imported:
+ d:\Anaconda\envs\ael\lib\site-packages\pydevd_plugins\extensions\pydevd_plugin_omegaconf.py
+  warnings.warn(msg + ':\n {}'.format('\n  '.join(_unvendored)))
+[*] Running ...
+[*] Average:
+0.007789105713919474

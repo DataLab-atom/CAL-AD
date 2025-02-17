@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from utils.utils import init_client
 
-
 ROOT_DIR = os.getcwd()
 logging.basicConfig(level=logging.INFO)
 

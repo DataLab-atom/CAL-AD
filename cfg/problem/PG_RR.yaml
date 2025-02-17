@@ -1,0 +1,5 @@
+problem_name: PG_RR
+problem_type: nonsmooth optimization
+obj_type: min
+problem_size: 0 # not used
+description: Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.
