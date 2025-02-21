@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cal-ad"
+version = "0.1.0"
+description = "An algorithm evolution tool assisted by LLM"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^2.2.3"
+omegaconf = "^2.3.0"
+hydra-core = "^1.3.2"
+litellm = "^1.61.13"
+zhipuai = "^2.1.5.20250106"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
