@@ -12,17 +12,22 @@ from itertools import combinations
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from concurrent.futures import as_completed
 from collections import namedtuple
-
-def static_run_code(individual: dict, response_id, iteration, output_dir, root_dir, problem, problem_size, problem_type, timeout):
+import uuid
+def static_run_code(individual: dict, response_id, uuid,iteration, output_dir, root_dir, problem, problem_size, problem_type, timeout):
     """
     Write code into a file and run eval script.
     """
-    logging.info(f"Iteration {iteration}: Running Code {response_id}")
+    logging.info(f"Iteration {iteration}: Running Code {uuid}")
     #logging.debug(f"Iteration {iteration}: Processing Code Run {response_id}")
     output_index = f'_{individual["func_index"]}'
-    outfile_path = f'iter_num_{iteration}_func_index{output_index}_response_id_{response_id}.py'
+    outfile_path = f'iter_num_{iteration}_func_index{output_index}_response_id_{uuid}.py'
     with open(output_dir+'generated/'+outfile_path, 'w') as file:
         file.write(individual["code"])
+    with open(output_dir+'generated/aaa.py', 'r') as file:
+            content = file.read()
+    with open(output_dir+'generated/'+outfile_path, 'a') as file:  # 'a' 表示 append（追加）
+        file.write("\n")  # 可选，换行
+        file.write(content)
 
     # Execute the python file with flags
     with open(individual["stdout_filepath"], 'w') as f:
@@ -31,7 +36,7 @@ def static_run_code(individual: dict, response_id, iteration, output_dir, root_d
         process = subprocess.Popen(['python', '-u', eval_file_path, f'{problem_size}', root_dir, "train",outfile_path],
                                     stdout=f, stderr=f)
 
-    block_until_running(individual["stdout_filepath"], log_status=True, iter_num=iteration, response_id=response_id)
+    block_until_running(individual["stdout_filepath"], log_status=True, iter_num=iteration, response_id=uuid)
     
     try:
         process.communicate(timeout=timeout)  # 等待子进程完成
@@ -189,6 +194,7 @@ class ReEv2d:
             "funcs": self.seed_funcs,
             "func_index":-1,
             "response_id": 0,
+            "uuid":0,
         }
         self.seed_ind = seed_ind
         temp = self.evaluate_population([seed_ind])[0]
@@ -253,8 +259,11 @@ class ReEv2d:
         """
         Convert response to individual
         """
+        uuid_obj = uuid.uuid4()
+        hex_int = int(uuid_obj.hex, 16)
+        uuid_id = int(hex_int)
         # Write response to file
-        file_name = f"problem_iter{self.iteration}_response{response_id}.txt" if file_name is None else file_name + ".txt"
+        file_name = f"problem_iter{self.iteration}_response{uuid_id}.txt" if file_name is None else file_name + ".txt"
         try:
             with open(file_name, 'w') as file:
                 file.writelines(response + '\n')
@@ -268,7 +277,7 @@ class ReEv2d:
             
 
         # Extract code and description from response
-        std_out_filepath = f"problem_iter{self.iteration}_stdout{response_id}.txt" if file_name is None else file_name + "_stdout.txt"
+        std_out_filepath = f"problem_iter{self.iteration}_stdout{uuid_id}.txt" if file_name is None else file_name + "_stdout.txt"
         
         temp_funcs = copy.deepcopy(funcs)
         temp_funcs[func_index] = response.replace(f'{self.func_names[func_index]}_v2',self.func_names[func_index]).replace(f'{self.func_names[func_index]}_v1',self.func_names[func_index])
@@ -276,11 +285,12 @@ class ReEv2d:
         
         individual = {
             "stdout_filepath": std_out_filepath,
-            "code_path": f"problem_iter{self.iteration}_funcIndex{func_index}_code{response_id}.txt",
+            "code_path": f"problem_iter{self.iteration}_funcIndex{func_index}_code{uuid_id}.txt",
             "code": code,
             "funcs":temp_funcs,
             "func_index":func_index,
             "response_id": response_id,
+            "uuid":uuid_id,
         }
         return individual
 
@@ -307,7 +317,7 @@ class ReEv2d:
             individual["traceback_msg"] = traceback_msg
             return individual
 
-        with ProcessPoolExecutor(max_workers=2) as executor:
+        with ProcessPoolExecutor(max_workers=8) as executor:
             futures={}
             for response_id in range(len(population)):
                 self.function_evals += 1
@@ -315,7 +325,7 @@ class ReEv2d:
                 if population[response_id]["code"] is None:
                     population[response_id] = mark_invalid_individual(population[response_id], "Invalid response!")
                     continue
-                futures[response_id]=executor.submit(static_run_code, population[response_id], response_id, self.iteration, self.output_dir, self.root_dir, self.problem, self.problem_size, self.problem_type, self.cfg.timeout)
+                futures[response_id]=executor.submit(static_run_code, population[response_id], response_id,population[response_id]["uuid"], self.iteration, self.output_dir, self.root_dir, self.problem, self.problem_size, self.problem_type, self.cfg.timeout)
             
 
             # 创建一个命名元组来保存 Future 和 response_id
@@ -673,7 +683,7 @@ class ReEv2d:
             ind_keys = [k for k,v in ind_map.items() if len(v) > 5]
             if (self.cfg.algorithm == 'reevo2d') and (len(ind_keys) > 2) :
                 responeses,parent_funcs,crossover_index = [],[],[]
-                MIN_LENGTH = 20
+                MIN_LENGTH = 5
                 for (key_1,key_2) in combinations(ind_keys, 2):
                     ind_1,ind_2 = copy.deepcopy(ind_map[key_1]),copy.deepcopy(ind_map[key_2])
                     random.shuffle(ind_1)
