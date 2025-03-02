@@ -1,9 +1,0 @@
-def select_next_node(current_node: int, unvisited_nodes: np.ndarray, pheromone_matrix: np.ndarray, 
-                        distance_matrix: np.ndarray, alpha: float, beta: float) -> int:
-    """Select the next node based on the ACO probability formula with a focus on natural balance."""
-    pheromone = pheromone_matrix[current_node, unvisited_nodes]
-    distance = distance_matrix[current_node, unvisited_nodes]
-    attractiveness = (pheromone ** alpha) * ((1.0 / distance) ** beta)
-    probabilities = attractiveness / np.sum(attractiveness)
-    next_node = np.random.choice(unvisited_nodes, p=probabilities)
-    return next_node

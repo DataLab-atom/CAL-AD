@@ -1,5 +1,0 @@
-1. **Dynamic Tuning**: Adjust `alpha`, `beta`, and `Q` based on iteration progress and solution quality.
-2. **Elite Ants**: Reinforce top solutions more heavily to guide exploration.
-3. **Local Search**: Apply 2-opt/3-opt post-construction for route refinement.
-4. **Diversification**: Introduce random perturbations and periodic restarts to escape local optima.
-5. **Efficient Data Structures**: Use sets for `unvisited_nodes` and precompute distances for faster access.

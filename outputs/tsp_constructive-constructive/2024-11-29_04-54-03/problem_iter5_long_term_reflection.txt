@@ -1,8 +1,0 @@
-1. **Elitism**: Retain top solutions to guide search.
-2. **Adaptive Mutation**: Adjust rate based on fitness.
-3. **Diverse Crossover**: Mix techniques for varied offspring.
-4. **Dynamic Population**: Balance exploration and exploitation.
-5. **Local Search**: Enhance elite solutions post-mutation.
-6. **Parallel Evaluation**: Speed up fitness assessments.
-7. **Fitness Sharing**: Encourage population diversity.
-8. **Dynamic Selection**: Vary pressure to avoid local optima.

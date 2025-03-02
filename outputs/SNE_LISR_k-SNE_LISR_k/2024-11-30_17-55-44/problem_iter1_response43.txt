@@ -1,9 +1,0 @@
-```python
-def compute_omega_v2(t: int, n: int, r0: float, rho: float, M: float, L: float, alpha: float = 0.5) -> float:
-    """Compute the scaling parameter omega with a more dynamic decay and scaling mechanism."""
-    if t % n == 0:
-        decay = rho**(t // n)
-        scale = M * np.sqrt(L) * r0
-        return (1 + alpha * scale * decay)**2
-    return 1.0
-```

@@ -1,9 +1,0 @@
-[*] Running ...
-Traceback (most recent call last):
-  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive/eval.py", line 22, in <module>
-    search_routine = getattr(module, 'search_routine')
-                     ^^^^^^^^^^^^^^^^^^^[*] Instance 3: 6.08970137138035
-[*] Instance 4: 6.077046379574659
-[*] Average:
-5.936065372661977
-bute 'search_routine'

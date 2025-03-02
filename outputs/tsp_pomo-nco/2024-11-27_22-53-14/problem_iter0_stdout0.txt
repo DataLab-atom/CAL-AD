@@ -1,6 +1,0 @@
-[*] Running ...
-Traceback (most recent call last):
-  File "F:\AEL-P-SNE/problems/tsp_pomo/eval.py", line 29, in <module>
-    module = __import__(f'generated.{outfile_path}'.replace('.py',''), fromlist=['search_routine'])
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ModuleNotFoundError: No module named 'generated.F:/AEL-P-SNE/problems/tsp_pomo/generated'; 'generated' is not a package

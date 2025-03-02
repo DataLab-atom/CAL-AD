@@ -1,7 +1,0 @@
-[2024-11-28 12:49:28,669][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\tsp_pomo-nco\2024-11-28_12-49-28
-[2024-11-28 12:49:28,669][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
-[2024-11-28 12:49:28,670][root][INFO] - Using LLM: deepseek-coder
-[2024-11-28 12:49:28,670][root][INFO] - Using Algorithm: reevo
-[2024-11-28 12:49:32,206][root][INFO] - Problem: tsp_pomo
-[2024-11-28 12:49:32,206][root][INFO] - Problem description: Assisting in solving the Traveling Salesman Problem (TSP) with some prior heuristics. TSP requires finding the shortest path that visits all given nodes and returns to the starting node.
-[2024-11-28 12:49:32,250][root][INFO] - Functions name: [_run_episode,search_routine]

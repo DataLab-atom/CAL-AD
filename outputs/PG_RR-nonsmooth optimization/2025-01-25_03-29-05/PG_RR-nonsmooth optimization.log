@@ -1,6 +1,0 @@
-[2025-01-25 03:29:05,103][root][INFO] - Workspace: D:\project\xiangmu\AEL-P-SNE(1)\AEL-P-SNE(copy)\outputs\PG_RR-nonsmooth optimization\2025-01-25_03-29-05
-[2025-01-25 03:29:05,103][root][INFO] - Project Root: AEL-P-SNE(COPY)
-[2025-01-25 03:29:05,103][root][INFO] - Using LLM: deepseek-coder
-[2025-01-25 03:29:05,103][root][INFO] - Using Algorithm: reevo2d
-[2025-01-25 03:29:08,334][root][INFO] - Problem: PG_RR
-[2025-01-25 03:29:08,335][root][INFO] - Problem description: Find a point \( x^* \) that minimizes the objective function \( f(x) \). The objective function is defined as:$ \\frac{{1}}{{n}} \\sum_{{i=1}}^{{n}} \\| y_i - A_i x \\|_2^2 + \\lambda \\| x \\|_1 $ where \( A_i \) are definited matrices and \( y_i \) are definited vector. The goal is to determine the optimal point \( x^* \) that achieves the minimum value of this function.

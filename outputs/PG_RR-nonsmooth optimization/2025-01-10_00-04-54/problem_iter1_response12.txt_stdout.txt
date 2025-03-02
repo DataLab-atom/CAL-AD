@@ -1,3 +1,0 @@
-/root/.vscode-server/extensions/ms-python.debugpy-2024.14.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/_vendored/force_pydevd.py:18: UserWarning: incompatible copy of pydevd already imported:
- /root/miniconda3/lib/python3.10/site-packages/pydevd_plugins/extensions/pydevd_plugin_omegaconf.py
-  warnings.warn(msg + ':\n {}'.format('\n  '.join(_unvendored)))

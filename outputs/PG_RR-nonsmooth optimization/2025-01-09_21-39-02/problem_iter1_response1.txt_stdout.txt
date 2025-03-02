@@ -1,9 +1,0 @@
-[*] Running ...
-Traceback (most recent call last):
-  File "/root/AEL-P-SNE/problems/PG_RR/eval.py", line 55, in <module>
-    x_new = PG_RR(A, y, lambda_, gamma, num_epochs, x)
-  File "/root/AEL-P-SNE/problems/PG_RR/generated/iter_num_1_func_index_1_response_id_51.py", line 66, in PG_RR
-    x = soft_thresholding(x - gamma * gradient, gamma * lambda_)
-  File "/root/AEL-P-SNE/problems/PG_RR/generated/iter_num_1_func_index_1_response_id_51.py", line 6, in soft_thresholding
-    def soft_thresholding(x: np.ndarray, threshold: float) -> np.ndarray:
-KeyboardInterrupt

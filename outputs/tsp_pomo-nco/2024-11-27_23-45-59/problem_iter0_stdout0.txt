@@ -1,9 +1,0 @@
-[*] Running ...
-Traceback (most recent call last):
-  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_pomo/eval.py", line 38, in <module>
-    node_positions = np.load(dataset_path)
-                     ^^^^^^^^^^^^^^^^^^^^^
-  File "D:\anaconda3\envs\data\envs\py3.11\Lib\site-packages\numpy\lib\npyio.py", line 427, in load
-    fid = stack.enter_context(open(os_fspath(file), "rb"))
-                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'E:\\all_works\\iclr2025\\AEL-P-SNE(1)\\AEL-P-SNE/problems/tsp_pomo\\dataset\\train50_dataset.npy'

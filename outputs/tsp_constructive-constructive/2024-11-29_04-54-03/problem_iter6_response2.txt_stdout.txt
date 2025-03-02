@@ -1,6 +1,0 @@
-[*] Running ...
-Traceback (most recent call last):
-  File "E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_constructive/eval.py", line 22, in <module>
-    search_routine = getattr(module, 'search_routine')
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: module 'generated.iter_num_6_func_index_5_response_id_2' has no attribute 'search_routine'

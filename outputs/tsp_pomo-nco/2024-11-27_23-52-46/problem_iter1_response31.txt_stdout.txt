@@ -1,9 +1,0 @@
-[*] Running ...
-[*] Dataset loaded: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE/problems/tsp_pomo\dataset\train50_dataset.npy with 5 instances.
-[*] Instance 0: 20.95131697784699
-[*] Instance 1: 26.852019451766786
-[*] Instance 2: 20.88118122236351
-[*] Instance 3: 25.698748466351056
-[*] Instance 4: 25.789217455466606
-[*] Average:
-24.03449671475899
