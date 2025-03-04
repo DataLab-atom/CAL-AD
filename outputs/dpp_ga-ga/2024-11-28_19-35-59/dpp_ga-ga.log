@@ -1,0 +1,2563 @@
+[2024-11-28 19:35:59,622][root][INFO] - Workspace: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE\outputs\dpp_ga-ga\2024-11-28_19-35-59
+[2024-11-28 19:35:59,623][root][INFO] - Project Root: E:\all_works\iclr2025\AEL-P-SNE(1)\AEL-P-SNE
+[2024-11-28 19:35:59,623][root][INFO] - Using LLM: deepseek-coder
+[2024-11-28 19:35:59,623][root][INFO] - Using Algorithm: reevo2d
+[2024-11-28 19:36:01,176][root][INFO] - Problem: dpp_ga
+[2024-11-28 19:36:01,176][root][INFO] - Problem description: Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+[2024-11-28 19:36:01,177][root][INFO] - Functions name: [run_ga,initialize_population,evolve_population,evaluate_population,crossover,mutate]
+[2024-11-28 19:36:01,183][root][INFO] - Evaluating seed function...
+[2024-11-28 19:36:01,184][root][INFO] - Seed function code: 
+from dataclasses import dataclass
+from reward_functions import RewardModel
+import random
+from typing import List
+from typing import Tuple
+import numpy as np
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+[2024-11-28 19:36:01,194][root][INFO] - Iteration 0: Running Code 0
+[2024-11-28 19:36:01,642][root][INFO] - Iteration 0: Code Run 0 successful!
+[2024-11-28 19:38:14,632][root][INFO] - Iteration 0, response_id 0: Objective value: -7.502276249463951
+[2024-11-28 19:38:14,633][root][INFO] - Iteration 0: Elitist: -7.502276249463951
+[2024-11-28 19:38:14,633][root][INFO] - Iteration 0 finished...
+[2024-11-28 19:38:14,634][root][INFO] - Best obj: -7.502276249463951,Best obj func index: 5, Best Code Path: problem_iter0_code0.py
+[2024-11-28 19:38:14,634][root][INFO] - Function Evals: 1
+[2024-11-28 19:38:14,634][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `run_ga` has been selected from this document.
+Write a new `run_ga` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The function `run_ga` executes a Genetic Algorithm (GA) for optimization, taking the following inputs: `n_pop`, which defines the population size; `n_iter`, representing the number of generations; `n_inst`, the number of test instances to run; `elite_rate`, which specifies the percentage of elite individuals to retain; `n_decap`, indicating the number of decaps (capacitance values in this context); and `reward_model`, a model used to evaluate the fitness of individuals. The function outputs a float representing the average reward over all test instances. During its execution, `run_ga` initializes a population of individuals, evolves them across a set number of iterations by evaluating and selecting the best individuals according to the reward model, and ultimately returns the average fitness of the best individuals found across all instances, serving as a measure of the optimization performance of the genetic algorithm.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `run_ga_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:38:15,042][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,088][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,103][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,179][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,206][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,263][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,274][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,356][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,359][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,375][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,613][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,651][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,749][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,756][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,802][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:38:15,900][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:10,149][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:10,337][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:10,665][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:10,914][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:11,537][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:11,909][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,022][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,085][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,328][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,460][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,724][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:12,773][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:13,081][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:39:13,495][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,054][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `initialize_population` has been selected from this document.
+Write a new `initialize_population` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The `initialize_population` function is designed to generate an initial population for a genetic algorithm by creating a specified number of random individuals. It takes three inputs: `n_pop`, an integer representing the total population size; `n_decap`, an integer indicating the number of decaps (or capacitors) to be randomly assigned to each individual; and `total_ports`, an integer that defines the total number of available ports. The function outputs a list of tuples, where each tuple consists of a NumPy array (representing the random selection of decap placements) and a float (representing a randomly chosen probing port). This function serves the purpose of initiating the diversity necessary for the evolutionary process in the genetic algorithm, enabling exploration of various configurations in the optimization task.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `initialize_population_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:40:11,327][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,339][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,399][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,493][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,501][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,523][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,528][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,562][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,565][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,602][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,630][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,707][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,749][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:11,837][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:12,161][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:12,191][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:31,147][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:31,843][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:31,960][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,142][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,291][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,344][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,352][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,410][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,483][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,667][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:32,780][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:33,171][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:33,309][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:33,451][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:54,719][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `evolve_population` has been selected from this document.
+Write a new `evolve_population` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The `evolve_population` function is designed to evolve a given population of individuals representing potential solutions in a genetic algorithm framework. It takes three inputs: `population`, which is a list of tuples containing individuals (each represented by an array of parameters and a fitness score); `reward_model`, an object used to evaluate the fitness of individuals; and `elite_rate`, a float determining the proportion of the best individuals (elites) to retain for reproduction. The function outputs a new list of tuples representing the evolved population, achieved by first evaluating the current fitness of individuals, selecting a subset of elite individuals based on their fitness scores, and then generating new individuals through crossover and mutation of these elite members. This process aims to improve the population over successive generations by favoring individuals with better performance as assessed by the reward model.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `evolve_population_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:40:54,989][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,110][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,282][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,294][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,308][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,409][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,425][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,426][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,465][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,483][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,533][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,625][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,909][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,926][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,946][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:40:55,996][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:34,530][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:35,565][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:36,216][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:37,375][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:39,021][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:41,672][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:48,330][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:49,462][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:50,271][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:51,547][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:51,748][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:51,793][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:52,737][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:41:53,013][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:42,884][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `evaluate_population` has been selected from this document.
+Write a new `evaluate_population` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The `evaluate_population` function is designed to assess the fitness of individuals within a population using a specified reward model. It takes two inputs: `population`, which is a list of tuples where each tuple contains a NumPy array representing an individual (specifically, its capacitor placements) and a float (initially representing a 'probe' or a placeholder fitness value); and `reward_model`, an instance of a `RewardModel` class that evaluates the fitness based on certain criteria. The function iterates through each individual in the population, calculates its fitness using the reward model based on its probe and capacitor placements, and updates the individual's fitness value accordingly. The output is a modified list of tuples, where each tuple now contains the original capacitor placements and the calculated fitness value, effectively allowing further genetic algorithm processes to utilize the fitness scores for selection and evolution.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `evaluate_population_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:42:43,095][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,098][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,214][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,372][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,426][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,431][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,531][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,612][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,644][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,660][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,812][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,880][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,909][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:43,973][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:44,021][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:44,024][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:56,123][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:56,268][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:56,425][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:56,972][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:57,068][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:57,551][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:57,693][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:58,026][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:58,294][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:58,442][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:58,469][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:58,573][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:59,212][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:42:59,456][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,068][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `crossover` has been selected from this document.
+Write a new `crossover` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The `crossover` function is designed to facilitate genetic mixing in a genetic algorithm by taking two parent tuples as inputs, where each tuple consists of a NumPy array representing capacitor placements and an integer representing a probing port. The function randomly selects a split point to create two children: `child1` and `child2`, where each child's capacitor placements are formed by combining the initial segments from one parent with the latter segments from the other. Additionally, each child is assigned a probing port chosen randomly from one of the parents. The output of the function is a tuple containing the two children, each structured similarly to the parent input tuples. The primary purpose of this function is to breed new individuals that inherit traits from both parents, thereby enhancing the exploration of the search space in the optimization process.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `crossover_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:43:17,345][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,434][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,536][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,549][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,633][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,680][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,715][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,861][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:17,921][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,007][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,083][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,092][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,197][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,264][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,415][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:18,427][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:43,533][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:44,069][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:44,339][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:45,023][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:45,294][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:47,354][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:48,161][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:48,464][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:49,719][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:49,762][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:49,825][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:50,357][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:50,465][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:43:50,470][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:21,092][root][INFO] - Initial Population Prompt: 
+System Prompt: 
+You are an expert-level algorithm engineer. Your task is to design efficient algorithms that can effectively solve optimization problems.
+Your response outputs Python code and nothing else. Format your code as a Python code string: "```python ... ```".
+
+User Prompt: 
+There is a Markdown document that contains Python code along with relevant explanations. A target function `mutate` has been selected from this document.
+Write a new `mutate` for problem:
+Assisting in solving black-box decap placement problem with genetic algorithm. The problem requires finding the optimal placement of decaps in a given power grid.
+
+Function description:
+The `mutate` function is designed to introduce genetic diversity into an individual within a genetic algorithm by randomly modifying some of its attributes, referred to as genes. It takes as inputs a tuple representing the individual, consisting of an array (which contains a set of capacitor placements labeled as `pi`) and an integer (`probe`), along with `total_ports`, which indicates the maximum range of possible values for the genes. The function outputs a modified individual (as a tuple) where each element of the `pi` array is subject to mutation based on a defined mutation rate, and the `probe` value may also be altered randomly. The primary purpose of this function is to enhance the variability of the population, allowing for exploration of a broader solution space during the optimization process.
+
+markdown document:
+```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.```python
+import numpy as np
+import random
+from typing import List, Tuple
+
+def run_ga(n_pop: int, n_iter: int, n_inst: int, elite_rate: float, n_decap: int, reward_model: 'RewardModel') -> float:
+    '''
+    Runs the Genetic Algorithm (GA) for optimization.
+
+    Args:
+        n_pop (int): Population size.
+        n_iter (int): Number of generations.
+        n_inst (int): Number of test instances.
+        elite_rate (float): Percentage of elite individuals.
+        n_decap (int): Number of decap.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+    '''
+    sum_reward = 0.0
+    for _ in range(n_inst):
+        population = initialize_population(n_pop, n_decap, reward_model.n * reward_model.m)
+        for _ in range(n_iter):
+            population = evolve_population(population, reward_model, elite_rate)
+        best_individual = min(population, key=lambda x: x[1])
+        sum_reward += best_individual[1]
+    return sum_reward / n_inst
+
+def initialize_population(n_pop: int, n_decap: int, total_ports: int) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Initializes the population with random individuals.
+
+    Args:
+        n_pop (int): Population size.
+        n_decap (int): Number of decap.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: List of individuals with their fitness values.
+    '''
+    population = []
+    for _ in range(n_pop):
+        pi = np.random.choice(total_ports, n_decap, replace=False)
+        probe = random.randint(0, total_ports - 1)
+        population.append((pi, probe))
+    return population
+
+def evolve_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel', elite_rate: float) -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evolves the population by selecting, mating, and mutating individuals.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+        elite_rate (float): Percentage of elite individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: New population after evolution.
+    '''
+    population = evaluate_population(population, reward_model)
+    elite_count = int(elite_rate * len(population))
+    population.sort(key=lambda x: x[1])
+    elites = population[:elite_count]
+    new_population = elites.copy()
+    
+    while len(new_population) < len(population):
+        parent1, parent2 = random.sample(elites, 2)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, reward_model.n * reward_model.m)
+        child2 = mutate(child2, reward_model.n * reward_model.m)
+        new_population.append(child1)
+        new_population.append(child2)
+    
+    return new_population[:len(population)]
+
+def evaluate_population(population: List[Tuple[np.ndarray, float]], reward_model: 'RewardModel') -> List[Tuple[np.ndarray, float]]:
+    '''
+    Evaluates the population by calculating the fitness of each individual.
+
+    Args:
+        population (List[Tuple[np.ndarray, float]]): Current population.
+        reward_model (RewardModel): Reward model for scoring the individuals.
+
+    Returns:
+        List[Tuple[np.ndarray, float]]: Population with fitness values.
+    '''
+    for i in range(len(population)):
+        pi, probe = population[i]
+        fitness = reward_model(probe, pi)
+        population[i] = (pi, fitness)
+    return population
+
+def crossover(parent1: Tuple[np.ndarray, int], parent2: Tuple[np.ndarray, int]) -> Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]:
+    '''
+    Performs crossover between two parents to produce two children.
+
+    Args:
+        parent1 (Tuple[np.ndarray, int]): First parent.
+        parent2 (Tuple[np.ndarray, int]): Second parent.
+
+    Returns:
+        Tuple[Tuple[np.ndarray, int], Tuple[np.ndarray, int]]: Two children.
+    '''
+    pi1, probe1 = parent1
+    pi2, probe2 = parent2
+    split_point = random.randint(1, len(pi1) - 1)
+    child1_pi = np.concatenate((pi1[:split_point], pi2[split_point:]))
+    child2_pi = np.concatenate((pi2[:split_point], pi1[split_point:]))
+    child1_probe = probe1 if random.random() < 0.5 else probe2
+    child2_probe = probe2 if random.random() < 0.5 else probe1
+    return (child1_pi, child1_probe), (child2_pi, child2_probe)
+
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+if __name__ == "__main__":
+    n, m = 10, 10
+    reward_model = RewardModel(n=n, m=m)
+    n_pop = 50
+    n_iter = 100
+    n_inst = 10
+    elite_rate = 0.2
+    n_decap = 10
+    avg_reward = run_ga(n_pop, n_iter, n_inst, elite_rate, n_decap, reward_model)
+    print(f"Average reward over {n_inst} instances: {avg_reward}")
+```
+
+### Explanation:
+1. **Initialization**: The `initialize_population` function creates a population of random individuals, each with a random set of capacitor placements (`pi`) and a random probing port.
+2. **Evaluation**: The `evaluate_population` function calculates the fitness of each individual using the `RewardModel`.
+3. **Evolution**: The `evolve_population` function evolves the population by selecting elite individuals, performing crossover, and mutating the individuals.
+4. **Crossover**: The `crossover` function combines two parents to produce two children by mixing their capacitor placements.
+5. **Mutation**: The `mutate` function introduces random changes to an individual's capacitor placements and probing port.
+6. **Main Function**: The `run_ga` function runs the genetic algorithm for a specified number of iterations and instances, returning the average reward.
+
+### Test Code:
+The test code initializes the `RewardModel` and runs the genetic algorithm with specified parameters, printing the average reward over multiple instances.
+
+```python
+def mutate(individual: Tuple[np.ndarray, int], total_ports: int) -> Tuple[np.ndarray, int]:
+    '''
+    Mutates an individual by randomly changing some of its genes.
+
+    Args:
+        individual (Tuple[np.ndarray, int]): Individual to mutate.
+        total_ports (int): Total number of ports.
+
+    Returns:
+        Tuple[np.ndarray, int]: Mutated individual.
+    '''
+    pi, probe = individual
+    mutation_rate = 0.1
+    for i in range(len(pi)):
+        if random.random() < mutation_rate:
+            pi[i] = random.randint(0, total_ports - 1)
+    if random.random() < mutation_rate:
+        probe = random.randint(0, total_ports - 1)
+    return (pi, probe)
+
+```
+
+Refer to the format of a trivial design above. Be very creative and give `mutate_v2`. Output code only and enclose your code with Python code block: ```python ... ```.
+
+
+[2024-11-28 19:44:21,359][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:21,392][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:21,422][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:21,813][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:21,891][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,000][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,007][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,009][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,014][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,023][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,025][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,051][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,174][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,195][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,205][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:22,382][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:37,821][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:39,851][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:40,436][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:40,812][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,332][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,493][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,544][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,555][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,592][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:41,615][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:42,367][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:42,679][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:42,956][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:44:42,962][httpx][INFO] - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+[2024-11-28 19:45:05,748][root][INFO] - Iteration 1: Running Code 0
+[2024-11-28 19:45:06,229][root][INFO] - Iteration 1: Code Run 0 successful!
+[2024-11-28 19:45:06,229][root][INFO] - Iteration 1: Running Code 1
+[2024-11-28 19:45:06,833][root][INFO] - Iteration 1: Code Run 1 successful!
+[2024-11-28 19:45:06,836][root][INFO] - Iteration 1: Running Code 2
+[2024-11-28 19:45:08,134][root][INFO] - Iteration 1: Code Run 2 successful!
+[2024-11-28 19:45:08,134][root][INFO] - Iteration 1: Running Code 3
+[2024-11-28 19:45:10,446][root][INFO] - Iteration 1: Code Run 3 successful!
+[2024-11-28 19:45:10,461][root][INFO] - Iteration 1: Running Code 4
+[2024-11-28 19:45:15,725][root][INFO] - Iteration 1: Code Run 4 successful!
+[2024-11-28 19:45:15,803][root][INFO] - Iteration 1: Running Code 5
+[2024-11-28 19:45:20,358][root][INFO] - Iteration 1: Code Run 5 execution error!
+[2024-11-28 19:45:20,366][root][INFO] - Iteration 1: Running Code 6
+[2024-11-28 19:45:25,960][root][INFO] - Iteration 1: Code Run 6 successful!
+[2024-11-28 19:45:26,026][root][INFO] - Iteration 1: Running Code 7
+[2024-11-28 19:45:33,888][root][INFO] - Iteration 1: Code Run 7 successful!
+[2024-11-28 19:45:33,907][root][INFO] - Iteration 1: Running Code 8
+[2024-11-28 19:45:39,884][root][INFO] - Iteration 1: Code Run 8 successful!
+[2024-11-28 19:45:39,936][root][INFO] - Iteration 1: Running Code 9
+[2024-11-28 19:45:48,139][root][INFO] - Iteration 1: Code Run 9 successful!
+[2024-11-28 19:45:48,219][root][INFO] - Iteration 1: Running Code 10
+[2024-11-28 19:45:53,591][root][INFO] - Iteration 1: Code Run 10 successful!
+[2024-11-28 19:45:53,625][root][INFO] - Iteration 1: Running Code 11
+[2024-11-28 19:46:03,203][root][INFO] - Iteration 1: Code Run 11 successful!
+[2024-11-28 19:46:03,357][root][INFO] - Iteration 1: Running Code 12
+[2024-11-28 19:46:08,283][root][INFO] - Iteration 1: Code Run 12 successful!
+[2024-11-28 19:46:08,540][root][INFO] - Iteration 1: Running Code 13
+[2024-11-28 19:46:19,719][root][INFO] - Iteration 1: Code Run 13 successful!
+[2024-11-28 19:46:19,760][root][INFO] - Iteration 1: Running Code 14
+[2024-11-28 19:46:32,495][root][INFO] - Iteration 1: Code Run 14 successful!
+[2024-11-28 19:46:32,846][root][INFO] - Iteration 1: Running Code 15
+[2024-11-28 19:46:41,578][root][INFO] - Iteration 1: Code Run 15 successful!
+[2024-11-28 19:46:41,578][root][INFO] - Iteration 1: Running Code 16
+[2024-11-28 19:46:48,969][root][INFO] - Iteration 1: Code Run 16 successful!
+[2024-11-28 19:46:48,969][root][INFO] - Iteration 1: Running Code 17
+[2024-11-28 19:47:08,398][root][INFO] - Iteration 1: Code Run 17 successful!
+[2024-11-28 19:47:08,720][root][INFO] - Iteration 1: Running Code 18
+[2024-11-28 19:47:24,441][root][INFO] - Iteration 1: Code Run 18 successful!
+[2024-11-28 19:47:24,845][root][INFO] - Iteration 1: Running Code 19
+[2024-11-28 19:47:35,468][root][INFO] - Iteration 1: Code Run 19 successful!
+[2024-11-28 19:47:35,469][root][INFO] - Iteration 1: Running Code 20
+[2024-11-28 19:47:52,470][root][INFO] - Iteration 1: Code Run 20 successful!
+[2024-11-28 19:47:52,471][root][INFO] - Iteration 1: Running Code 21
+[2024-11-28 19:48:22,907][root][INFO] - Iteration 1: Code Run 21 successful!
+[2024-11-28 19:48:22,908][root][INFO] - Iteration 1: Running Code 22
+[2024-11-28 19:48:42,221][root][INFO] - Iteration 1: Code Run 22 successful!
+[2024-11-28 19:48:42,221][root][INFO] - Iteration 1: Running Code 23
+[2024-11-28 19:49:04,048][root][INFO] - Iteration 1: Code Run 23 successful!
+[2024-11-28 19:49:04,471][root][INFO] - Iteration 1: Running Code 24
+[2024-11-28 19:49:25,095][root][INFO] - Iteration 1: Code Run 24 successful!
+[2024-11-28 19:49:25,095][root][INFO] - Iteration 1: Running Code 25
+[2024-11-28 19:49:50,392][root][INFO] - Iteration 1: Code Run 25 successful!
+[2024-11-28 19:49:50,393][root][INFO] - Iteration 1: Running Code 26
+[2024-11-28 19:50:21,837][root][INFO] - Iteration 1: Code Run 26 successful!
+[2024-11-28 19:50:21,837][root][INFO] - Iteration 1: Running Code 27
+[2024-11-28 19:50:44,099][root][INFO] - Iteration 1: Code Run 27 successful!
+[2024-11-28 19:50:44,100][root][INFO] - Iteration 1: Running Code 28
+[2024-11-28 19:51:04,871][root][INFO] - Iteration 1: Code Run 28 successful!
+[2024-11-28 19:51:05,469][root][INFO] - Iteration 1: Running Code 29
+[2024-11-28 19:51:42,344][root][INFO] - Iteration 1: Code Run 29 successful!
+[2024-11-28 19:51:42,876][root][INFO] - Iteration 1: Running Code 30
+[2024-11-28 19:52:15,872][root][INFO] - Iteration 1: Code Run 30 successful!
+[2024-11-28 19:52:16,072][root][INFO] - Iteration 1: Running Code 31
+[2024-11-28 19:52:36,614][root][INFO] - Iteration 1: Code Run 31 successful!
+[2024-11-28 19:52:37,268][root][INFO] - Iteration 1: Running Code 32
+[2024-11-28 19:53:08,719][root][INFO] - Iteration 1: Code Run 32 successful!
+[2024-11-28 19:53:08,719][root][INFO] - Iteration 1: Running Code 33
+[2024-11-28 19:53:39,851][root][INFO] - Iteration 1: Code Run 33 successful!
+[2024-11-28 19:53:40,518][root][INFO] - Iteration 1: Running Code 34
+[2024-11-28 19:54:11,331][root][INFO] - Iteration 1: Code Run 34 successful!
+[2024-11-28 19:54:12,111][root][INFO] - Iteration 1: Running Code 35
+[2024-11-28 19:54:59,389][root][INFO] - Iteration 1: Code Run 35 successful!
+[2024-11-28 19:54:59,391][root][INFO] - Iteration 1: Running Code 36
+[2024-11-28 19:55:34,771][root][INFO] - Iteration 1: Code Run 36 successful!
+[2024-11-28 19:55:34,772][root][INFO] - Iteration 1: Running Code 37
+[2024-11-28 19:56:26,266][root][INFO] - Iteration 1: Code Run 37 successful!
+[2024-11-28 19:56:26,273][root][INFO] - Iteration 1: Running Code 38
+[2024-11-28 19:56:56,674][root][INFO] - Iteration 1: Code Run 38 successful!
+[2024-11-28 19:56:57,521][root][INFO] - Iteration 1: Running Code 39
+[2024-11-28 19:57:45,772][root][INFO] - Iteration 1: Code Run 39 successful!
+[2024-11-28 19:57:45,772][root][INFO] - Iteration 1: Running Code 40
+[2024-11-28 19:58:36,440][root][INFO] - Iteration 1: Code Run 40 successful!
+[2024-11-28 19:58:36,441][root][INFO] - Iteration 1: Running Code 41
+[2024-11-28 19:59:06,311][root][INFO] - Iteration 1: Code Run 41 successful!
+[2024-11-28 19:59:06,312][root][INFO] - Iteration 1: Running Code 42
+[2024-11-28 19:59:29,817][root][INFO] - Iteration 1: Code Run 42 successful!
+[2024-11-28 19:59:29,818][root][INFO] - Iteration 1: Running Code 43
+[2024-11-28 20:00:28,939][root][INFO] - Iteration 1: Code Run 43 successful!
+[2024-11-28 20:00:30,041][root][INFO] - Iteration 1: Running Code 44
+[2024-11-28 20:01:06,454][root][INFO] - Iteration 1: Code Run 44 successful!
+[2024-11-28 20:01:06,455][root][INFO] - Iteration 1: Running Code 45
+[2024-11-28 20:02:04,311][root][INFO] - Iteration 1: Code Run 45 successful!
+[2024-11-28 20:02:05,175][root][INFO] - Iteration 1: Running Code 46
+[2024-11-28 20:02:47,738][root][INFO] - Iteration 1: Code Run 46 successful!
+[2024-11-28 20:02:47,739][root][INFO] - Iteration 1: Running Code 47
+[2024-11-28 20:03:24,977][root][INFO] - Iteration 1: Code Run 47 successful!
+[2024-11-28 20:03:24,977][root][INFO] - Iteration 1: Running Code 48
+[2024-11-28 20:03:56,431][root][INFO] - Iteration 1: Code Run 48 successful!
+[2024-11-28 20:03:56,432][root][INFO] - Iteration 1: Running Code 49
+[2024-11-28 20:04:33,135][root][INFO] - Iteration 1: Code Run 49 successful!
+[2024-11-28 20:04:34,114][root][INFO] - Iteration 1: Running Code 50
+[2024-11-28 20:05:06,814][root][INFO] - Iteration 1: Code Run 50 successful!
+[2024-11-28 20:05:07,482][root][INFO] - Iteration 1: Running Code 51
+[2024-11-28 20:05:37,478][root][INFO] - Iteration 1: Code Run 51 successful!
+[2024-11-28 20:05:38,820][root][INFO] - Iteration 1: Running Code 52
+[2024-11-28 20:06:10,409][root][INFO] - Iteration 1: Code Run 52 successful!
+[2024-11-28 20:06:11,549][root][INFO] - Iteration 1: Running Code 53
+[2024-11-28 20:06:44,845][root][INFO] - Iteration 1: Code Run 53 successful!
+[2024-11-28 20:06:45,794][root][INFO] - Iteration 1: Running Code 54
+[2024-11-28 20:07:35,232][root][INFO] - Iteration 1: Code Run 54 successful!
+[2024-11-28 20:07:35,233][root][INFO] - Iteration 1: Running Code 55
+[2024-11-28 20:08:21,327][root][INFO] - Iteration 1: Code Run 55 successful!
+[2024-11-28 20:08:21,327][root][INFO] - Iteration 1: Running Code 56
+[2024-11-28 20:08:51,088][root][INFO] - Iteration 1: Code Run 56 successful!
+[2024-11-28 20:08:52,391][root][INFO] - Iteration 1: Running Code 57
+[2024-11-28 20:09:14,529][root][INFO] - Iteration 1: Code Run 57 successful!
+[2024-11-28 20:09:15,976][root][INFO] - Iteration 1: Running Code 58
+[2024-11-28 20:10:05,147][root][INFO] - Iteration 1: Code Run 58 successful!
+[2024-11-28 20:10:06,453][root][INFO] - Iteration 1: Running Code 59
+[2024-11-28 20:10:49,381][root][INFO] - Iteration 1: Code Run 59 successful!
+[2024-11-28 20:10:50,551][root][INFO] - Iteration 1: Running Code 60
+[2024-11-28 20:12:12,241][root][INFO] - Iteration 1: Code Run 60 successful!
+[2024-11-28 20:12:12,241][root][INFO] - Iteration 1: Running Code 61
+[2024-11-28 20:12:46,997][root][INFO] - Iteration 1: Code Run 61 successful!
+[2024-11-28 20:12:48,417][root][INFO] - Iteration 1: Running Code 62
+[2024-11-28 20:13:44,749][root][INFO] - Iteration 1: Code Run 62 successful!
+[2024-11-28 20:13:45,786][root][INFO] - Iteration 1: Running Code 63
+[2024-11-28 20:14:38,113][root][INFO] - Iteration 1: Code Run 63 successful!
+[2024-11-28 20:14:39,607][root][INFO] - Iteration 1: Running Code 64
+[2024-11-28 20:15:52,872][root][INFO] - Iteration 1: Code Run 64 successful!
+[2024-11-28 20:15:54,187][root][INFO] - Iteration 1: Running Code 65
+[2024-11-28 20:16:41,829][root][INFO] - Iteration 1: Code Run 65 successful!
+[2024-11-28 20:16:41,829][root][INFO] - Iteration 1: Running Code 66
+[2024-11-28 20:17:41,480][root][INFO] - Iteration 1: Code Run 66 successful!
+[2024-11-28 20:17:41,513][root][INFO] - Iteration 1: Running Code 67
+[2024-11-28 20:18:52,781][root][INFO] - Iteration 1: Code Run 67 successful!
+[2024-11-28 20:18:52,782][root][INFO] - Iteration 1: Running Code 68
+[2024-11-28 20:19:18,264][root][INFO] - Iteration 1: Code Run 68 successful!
+[2024-11-28 20:19:19,405][root][INFO] - Iteration 1: Running Code 69
+[2024-11-28 20:20:23,208][root][INFO] - Iteration 1: Code Run 69 successful!
+[2024-11-28 20:20:23,208][root][INFO] - Iteration 1: Running Code 70
+[2024-11-28 20:21:46,947][root][INFO] - Iteration 1: Code Run 70 successful!
+[2024-11-28 20:21:46,947][root][INFO] - Iteration 1: Running Code 71
+[2024-11-28 20:22:36,570][root][INFO] - Iteration 1: Code Run 71 successful!
+[2024-11-28 20:22:37,986][root][INFO] - Iteration 1: Running Code 72
+[2024-11-28 20:23:48,350][root][INFO] - Iteration 1: Code Run 72 successful!
+[2024-11-28 20:23:48,350][root][INFO] - Iteration 1: Running Code 73
+[2024-11-28 20:24:35,657][root][INFO] - Iteration 1: Code Run 73 successful!
+[2024-11-28 20:24:36,843][root][INFO] - Iteration 1: Running Code 74
+[2024-11-28 20:25:51,967][root][INFO] - Iteration 1: Code Run 74 successful!
+[2024-11-28 20:25:53,297][root][INFO] - Iteration 1: Running Code 75
+[2024-11-28 20:26:56,299][root][INFO] - Iteration 1: Code Run 75 successful!
+[2024-11-28 20:26:57,607][root][INFO] - Iteration 1: Running Code 76
+[2024-11-28 20:28:04,766][root][INFO] - Iteration 1: Code Run 76 successful!
+[2024-11-28 20:28:06,380][root][INFO] - Iteration 1: Running Code 77
+[2024-11-28 20:29:26,103][root][INFO] - Iteration 1: Code Run 77 successful!
+[2024-11-28 20:29:27,311][root][INFO] - Iteration 1: Running Code 78
+[2024-11-28 20:30:45,216][root][INFO] - Iteration 1: Code Run 78 successful!
+[2024-11-28 20:30:46,826][root][INFO] - Iteration 1: Running Code 79
+[2024-11-28 20:32:15,124][root][INFO] - Iteration 1: Code Run 79 successful!
+[2024-11-28 20:32:16,350][root][INFO] - Iteration 1: Running Code 80
+[2024-11-28 20:33:34,502][root][INFO] - Iteration 1: Code Run 80 successful!
+[2024-11-28 20:33:34,502][root][INFO] - Iteration 1: Running Code 81
+[2024-11-28 20:34:45,710][root][INFO] - Iteration 1: Code Run 81 successful!
+[2024-11-28 20:34:47,568][root][INFO] - Iteration 1: Running Code 82
+[2024-11-28 20:35:39,056][root][INFO] - Iteration 1: Code Run 82 successful!
+[2024-11-28 20:35:40,949][root][INFO] - Iteration 1: Running Code 83
+[2024-11-28 20:37:23,501][root][INFO] - Iteration 1: Code Run 83 successful!
+[2024-11-28 20:37:23,503][root][INFO] - Iteration 1: Running Code 84
+[2024-11-28 20:38:43,798][root][INFO] - Iteration 1: Code Run 84 successful!
+[2024-11-28 20:38:43,798][root][INFO] - Iteration 1: Running Code 85
+[2024-11-28 20:39:57,350][root][INFO] - Iteration 1: Code Run 85 successful!
+[2024-11-28 20:39:59,639][root][INFO] - Iteration 1: Running Code 86
